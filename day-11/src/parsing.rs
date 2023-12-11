@@ -26,6 +26,7 @@ impl ParseGrid for SpaceMap {
                 })
                 .collect(),
             shortest_path_between_pairs: None,
+            expanded_galaxies: None,
         }
     }
 }

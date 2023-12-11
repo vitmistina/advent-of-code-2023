@@ -1,54 +1,40 @@
-use crate::{Coordinate, Location, Observation, SpaceMap};
+use crate::{Coordinate, Observation, SpaceMap};
 
 pub trait ExpandsSpace {
     fn expand(&mut self, space_age_multiplier: &usize);
+    fn collect_galaxies(&self) -> Vec<Coordinate>;
 }
 
 impl ExpandsSpace for SpaceMap {
+    fn collect_galaxies(&self) -> Vec<Coordinate> {
+        self.grid
+            .iter()
+            .flat_map(|row| {
+                row.iter().filter_map(|loc| {
+                    if loc.observation == Observation::Galaxy {
+                        Some(loc.coordinate.clone())
+                    } else {
+                        None
+                    }
+                })
+            })
+            .collect()
+    }
     fn expand(&mut self, space_age_multiplier: &usize) {
         let empties = self.counts_empty_rows_and_columns();
-
-        let location_template = Location {
-            coordinate: Coordinate { x: 0, y: 0 },
-            observation: Observation::Space,
-            is_expanded: true,
-        };
-
-        let mut expanded_grid: Vec<Vec<Location>> = Vec::new();
-
-        for (y, row) in self.grid.iter().enumerate() {
-            if empties.0.contains(&y) {
-                for _ in 0..*space_age_multiplier - 1 {
-                    let extra_row = (0..self.grid[0].len())
-                        .map(|_| location_template.clone())
-                        .collect::<Vec<_>>();
-                    expanded_grid.push(extra_row);
-                }
-            }
-
-            expanded_grid.push(row.clone());
-        }
-
-        let mut x_offset = 0;
-        for x in 0..expanded_grid[0].len() {
-            if empties.1.contains(&x) {
-                for _ in 0..*space_age_multiplier - 1 {
-                    for row in expanded_grid.iter_mut() {
-                        row.insert(x + x_offset, location_template.clone());
-                    }
-                    x_offset += 1;
-                }
-            }
-        }
-
-        expanded_grid.iter_mut().enumerate().for_each(|(y, row)| {
-            row.iter_mut().enumerate().for_each(|(x, loc)| {
-                loc.coordinate.x = x;
-                loc.coordinate.y = y;
+        let galaxies = self
+            .collect_galaxies()
+            .iter()
+            .map(|galaxy| Coordinate {
+                x: galaxy.x
+                    + empties.1.iter().filter(|x| galaxy.x > **x).count()
+                        * (space_age_multiplier - 1),
+                y: galaxy.y
+                    + empties.0.iter().filter(|y| galaxy.y > **y).count()
+                        * (space_age_multiplier - 1),
             })
-        });
-
-        self.grid = expanded_grid;
+            .collect();
+        self.expanded_galaxies = Some(galaxies);
     }
 }
 
@@ -92,6 +78,42 @@ mod t {
     use super::*;
 
     #[test]
+    fn collects_galaxies() {
+        let input = "....#........
+.........#...
+#............
+.............
+.............
+........#....
+.#...........
+............#
+.............
+.............
+.........#...
+#....#.......";
+
+        let space_map = SpaceMap::parse_grid(input);
+
+        let galaxies: Vec<Coordinate> = space_map.collect_galaxies();
+
+        assert_eq!(galaxies.len(), 9);
+        assert_eq!(
+            galaxies,
+            vec![
+                Coordinate { x: 4, y: 0 },
+                Coordinate { x: 9, y: 1 },
+                Coordinate { x: 0, y: 2 },
+                Coordinate { x: 8, y: 5 },
+                Coordinate { x: 1, y: 6 },
+                Coordinate { x: 12, y: 7 },
+                Coordinate { x: 9, y: 10 },
+                Coordinate { x: 0, y: 11 },
+                Coordinate { x: 5, y: 11 }
+            ]
+        )
+    }
+
+    #[test]
     fn counts_empty_rows_and_columns() {
         let input = "...#......
 .......#..
@@ -123,109 +145,11 @@ mod t {
 
     #[test]
     fn expands_space() {
-        let input = "...#......
-.......#..
-#.........
-..........
-......#...
-.#........
-.........#
-..........
-.......#..
-#...#.....";
+        let input = ".#..
+...#";
         let mut space_map = SpaceMap::parse_grid(input);
         space_map.expand(&2);
-        assert_eq!(space_map.grid.len(), 12);
-        assert_eq!(space_map.grid[0].len(), 13);
-        assert_eq!(space_map.grid.iter().map(|row| row.len()).max(), Some(13));
-
-        let input = ".#.
-...";
-        let mut space_map = SpaceMap::parse_grid(input);
-        space_map.expand(&2);
-        let expected = vec![
-            vec![
-                Location {
-                    coordinate: Coordinate { x: 0, y: 0 },
-                    observation: Observation::Space,
-                    is_expanded: true,
-                },
-                Location {
-                    coordinate: Coordinate { x: 1, y: 0 },
-                    observation: Observation::Space,
-                    is_expanded: false,
-                },
-                Location {
-                    coordinate: Coordinate { x: 2, y: 0 },
-                    observation: Observation::Galaxy,
-                    is_expanded: false,
-                },
-                Location {
-                    coordinate: Coordinate { x: 3, y: 0 },
-                    observation: Observation::Space,
-                    is_expanded: true,
-                },
-                Location {
-                    coordinate: Coordinate { x: 4, y: 0 },
-                    observation: Observation::Space,
-                    is_expanded: false,
-                },
-            ],
-            vec![
-                Location {
-                    coordinate: Coordinate { x: 0, y: 1 },
-                    observation: Observation::Space,
-                    is_expanded: true,
-                },
-                Location {
-                    coordinate: Coordinate { x: 1, y: 1 },
-                    observation: Observation::Space,
-                    is_expanded: true,
-                },
-                Location {
-                    coordinate: Coordinate { x: 2, y: 1 },
-                    observation: Observation::Space,
-                    is_expanded: true,
-                },
-                Location {
-                    coordinate: Coordinate { x: 3, y: 1 },
-                    observation: Observation::Space,
-                    is_expanded: true,
-                },
-                Location {
-                    coordinate: Coordinate { x: 4, y: 1 },
-                    observation: Observation::Space,
-                    is_expanded: true,
-                },
-            ],
-            vec![
-                Location {
-                    coordinate: Coordinate { x: 0, y: 2 },
-                    observation: Observation::Space,
-                    is_expanded: true,
-                },
-                Location {
-                    coordinate: Coordinate { x: 1, y: 2 },
-                    observation: Observation::Space,
-                    is_expanded: false,
-                },
-                Location {
-                    coordinate: Coordinate { x: 2, y: 2 },
-                    observation: Observation::Space,
-                    is_expanded: false,
-                },
-                Location {
-                    coordinate: Coordinate { x: 3, y: 2 },
-                    observation: Observation::Space,
-                    is_expanded: true,
-                },
-                Location {
-                    coordinate: Coordinate { x: 4, y: 2 },
-                    observation: Observation::Space,
-                    is_expanded: false,
-                },
-            ],
-        ];
-        assert_eq!(space_map.grid, expected);
+        let expected = vec![Coordinate { x: 2, y: 0 }, Coordinate { x: 5, y: 1 }];
+        assert_eq!(space_map.expanded_galaxies, Some(expected));
     }
 }

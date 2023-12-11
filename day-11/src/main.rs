@@ -1,5 +1,5 @@
 mod parsing;
-use std::{fs, future::IntoFuture};
+use std::fs;
 
 use parsing::ParseGrid;
 
@@ -20,7 +20,7 @@ fn main() {
     let input = fs::read_to_string("input.txt").unwrap();
     let space_map = SpaceMap::calculate_galaxies(&input, &1000000);
     println!(
-        "Hello, very old world! {}",
+        "Hello, very old galaxies! {}",
         space_map.shortest_path_between_pairs.unwrap()
     );
 }
@@ -52,6 +52,7 @@ struct Location {
 
 struct SpaceMap {
     grid: Vec<Vec<Location>>,
+    expanded_galaxies: Option<Vec<Coordinate>>,
     shortest_path_between_pairs: Option<usize>,
 }
 
@@ -59,8 +60,8 @@ impl SpaceMap {
     fn calculate_galaxies(input: &str, space_age_multiplier: &usize) -> Self {
         let mut space_map = SpaceMap::parse_grid(input);
         space_map.expand(space_age_multiplier);
-        let galaxies = space_map.collect_galaxies();
-        let pairs = SpaceMap::establish_pairs(galaxies);
+
+        let pairs = space_map.establish_pairs();
 
         space_map.shortest_path_between_pairs =
             Some(pairs.iter().map(|pair| pair.0.distance_from(&pair.1)).sum());
