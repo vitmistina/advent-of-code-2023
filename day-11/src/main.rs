@@ -5,19 +5,22 @@ fn main() {
 mod parsing;
 use parsing::ParseGrid;
 
-#[derive(Debug, PartialEq)]
+mod expand;
+use expand::ExpandsSpace;
+
+#[derive(Debug, PartialEq, Clone)]
 enum Observation {
     Space,
     Galaxy,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 struct Coordinate {
     x: usize,
     y: usize,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 struct Location {
     coordinate: Coordinate,
     observation: Observation,
@@ -28,35 +31,9 @@ struct SpaceMap {
     grid: Vec<Vec<Location>>,
 }
 
-trait ExpandsSpace {
-    fn expand(&mut self);
-}
-
-impl ExpandsSpace for SpaceMap {
-    fn expand(&mut self) {}
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn expands_space() {
-        let input = "...#......
-.......#..
-#.........
-..........
-......#...
-.#........
-.........#
-..........
-.......#..
-#...#.....";
-        let mut space_map = SpaceMap::parse_grid(input);
-        space_map.expand();
-        assert_eq!(space_map.grid.len(), 12);
-        assert_eq!(space_map.grid[0].len(), 13);
-    }
 
     #[test]
     fn collects_galaxies() {
@@ -86,8 +63,13 @@ mod tests {
 .......#..
 #...#.....";
 
-        let space_map = SpaceMap::parse_grid(input);
+        let mut space_map = SpaceMap::parse_grid(input);
         assert_eq!(space_map.grid.len(), 10);
+
+        space_map.expand();
+        assert_eq!(space_map.grid.len(), 12);
+        assert_eq!(space_map.grid[0].len(), 13);
+
         todo!()
     }
 }
