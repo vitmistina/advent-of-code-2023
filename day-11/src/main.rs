@@ -17,7 +17,6 @@ fn main() {
         space_map.shortest_path_between_pairs.unwrap()
     );
 
-    let input = fs::read_to_string("input.txt").unwrap();
     let space_map = SpaceMap::calculate_galaxies(&input, &1000000);
     println!(
         "Hello, very old galaxies! {}",
