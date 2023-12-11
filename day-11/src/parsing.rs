@@ -25,6 +25,7 @@ impl ParseGrid for SpaceMap {
                         .collect()
                 })
                 .collect(),
+            shortest_path_between_pairs: None,
         }
     }
 }
