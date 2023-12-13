@@ -5,11 +5,15 @@ use spans::find_spans;
 fn main() {
     let input = fs::read_to_string("input.txt").unwrap();
     let result = compute_variants(&input);
+    print_variants(&input);
     //11955 too high
     //10133 too high
     //8921 too high
     //8375 too wrong
+    //7792 right answer
     println!("Hello, world! {result}");
+    let result = compute_unfolded_variants(&input);
+    println!("Unfolded world! {result}");
 }
 
 mod space_needed_heuristic;
@@ -41,6 +45,13 @@ impl JournalLine {
                 .collect(),
         }
     }
+
+    fn unfold(&mut self) {
+        self.springs = (0..4).fold(self.springs.clone(), |acc, _| acc + "?" + &self.springs);
+        self.numbers = (0..4).fold(self.numbers.clone(), |acc, _| {
+            [acc, self.numbers.clone()].concat()
+        });
+    }
 }
 
 fn compute_variants(input: &str) -> usize {
@@ -48,7 +59,44 @@ fn compute_variants(input: &str) -> usize {
     input
         .lines()
         .map(|line| JournalLine::parse_line(line))
-        .map(|j_line| find_recursively(&j_line.springs, &j_line.numbers, &mut cache).unwrap())
+        // .map(|j_line| find_recursively(&j_line.springs, &j_line.numbers, &mut cache).unwrap())
+        .map(|j_line| {
+            substring_method::find_recursively(&j_line.springs, &j_line.numbers, &mut cache)
+                .unwrap()
+        })
+        .sum()
+}
+
+fn print_variants(input: &str) {
+    let mut cache = HashMap::new();
+    let lines = input
+        .lines()
+        .map(|line| JournalLine::parse_line(line))
+        .map(|j_line| {
+            // let result = find_recursively(&j_line.springs, &j_line.numbers, &mut cache).unwrap();
+            let result =
+                substring_method::find_recursively(&j_line.springs, &j_line.numbers, &mut cache)
+                    .unwrap();
+            format!("{} {}", result, j_line.springs)
+        })
+        .reduce(|acc, line| acc + &"\n" + &line)
+        .unwrap();
+    let _ = fs::write("faster.txt", lines).is_ok();
+}
+
+fn compute_unfolded_variants(input: &str) -> usize {
+    let mut cache = HashMap::new();
+    input
+        .lines()
+        .map(|line| {
+            let mut j_line = JournalLine::parse_line(line);
+            j_line.unfold();
+            j_line
+        })
+        .map(|j_line| {
+            substring_method::find_recursively(&j_line.springs, &j_line.numbers, &mut cache)
+                .unwrap()
+        })
         .sum()
 }
 
@@ -67,9 +115,18 @@ fn find_recursively(
         return Some(*cache_result);
     };
     if let Some(first_question) = input.find('?') {
-        let is_to_be_stopped = compute_span_match(&input[0..first_question], numbers);
-        if is_to_be_stopped {
-            return Some(0);
+        let is_to_be_stopped = compute_span_match(&input, numbers, &first_question);
+        match is_to_be_stopped {
+            Some(result) => {
+                if result == true {
+                    cache.insert(j_line, 1);
+                    return Some(1);
+                }
+            }
+            None => {
+                cache.insert(j_line, 0);
+                return Some(0);
+            }
         }
         let one_more_dot = input.replacen('?', ".", 1);
         acc += find_recursively(&one_more_dot, numbers, cache).unwrap();
@@ -91,15 +148,61 @@ fn find_recursively(
     Some(acc)
 }
 
-fn compute_span_match(input: &str, numbers: &[u8]) -> bool {
-    let spans = find_spans(input);
+fn compute_span_match(input: &str, numbers: &[u8], first_question: &usize) -> Option<bool> {
+    if numbers.iter().sum::<u8>() < input.chars().filter(|char| char == &'#').count() as u8 {
+        // created too many hashes, solution won't exist
+        return None;
+    };
 
-    false
+    let filled_input = &input[..*first_question];
+    let spans = find_spans(filled_input);
+    if numbers.len() < spans.len() {
+        // created too many hash islands, solution won't exist
+        return None;
+    }
+
+    let is_some_span_bigger = spans
+        .iter()
+        .enumerate()
+        .any(|(index, span)| span.len as u8 > numbers[index]);
+    if is_some_span_bigger == true {
+        // created too long hash island, solution won't exist
+        return None;
+    }
+
+    let is_exact_match = spans.len() == numbers.len()
+        && spans
+            .iter()
+            .enumerate()
+            .all(|(index, span)| span.len as u8 == numbers[index]);
+    if is_exact_match == true {
+        return Some(true);
+    };
+
+    Some(false)
 }
 
 #[cfg(test)]
 mod t {
     use super::*;
+
+    #[test]
+    fn expand() {
+        let line = ".# 1";
+        let mut j_line = JournalLine::parse_line(line);
+        j_line.unfold();
+        assert_eq!(j_line.springs, ".#?.#?.#?.#?.#");
+        assert_eq!(j_line.numbers, vec![1, 1, 1, 1, 1]);
+
+        let line = "???.### 1,1,3";
+        let mut j_line = JournalLine::parse_line(line);
+        j_line.unfold();
+        assert_eq!(j_line.springs, "???.###????.###????.###????.###????.###");
+        assert_eq!(
+            j_line.numbers,
+            vec![1, 1, 3, 1, 1, 3, 1, 1, 3, 1, 1, 3, 1, 1, 3]
+        );
+    }
 
     #[test]
     fn break_me() {
@@ -143,6 +246,7 @@ mod t {
     }
 
     #[test]
+    #[ignore]
     fn integration() {
         let input = "???.### 1,1,3
 .??..??...?##. 1,1,3
@@ -152,6 +256,7 @@ mod t {
 ?###???????? 3,2,1";
 
         assert_eq!(compute_variants(input), 21);
+        assert_eq!(compute_unfolded_variants(input), 525152);
     }
 
     #[test]

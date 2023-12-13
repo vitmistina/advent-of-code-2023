@@ -1,6 +1,6 @@
-use std::{fs, ops::Sub};
+use std::{collections::HashMap, fs, ops::Sub};
 
-use crate::spans::find_spans;
+use crate::{spans::find_spans, JournalLine};
 
 #[derive(Debug, PartialEq)]
 struct Span {
@@ -8,42 +8,33 @@ struct Span {
     len: usize,
 }
 
-#[derive(Debug, PartialEq)]
-struct JournalLine {
-    springs: String,
-    numbers: Vec<u8>,
-}
-impl JournalLine {
-    fn parse_line(line: &str) -> Self {
-        let parts = line.split_whitespace().collect::<Vec<_>>();
-        Self {
-            springs: parts.get(0).unwrap().to_string(),
-            numbers: parts
-                .get(1)
-                .unwrap()
-                .split(",")
-                .map(|number| number.parse().unwrap())
-                .collect(),
-        }
-    }
-}
-
 fn compute_variants(input: &str) -> usize {
+    let mut cache = HashMap::new();
     input
         .lines()
         .map(|line| JournalLine::parse_line(line))
-        .map(|j_line| find_recursively(&j_line.springs, &j_line.numbers).unwrap())
+        .map(|j_line| find_recursively(&j_line.springs, &j_line.numbers, &mut cache).unwrap())
         .sum()
 }
 
-fn find_recursively(input: &str, numbers: &Vec<u8>) -> Option<usize> {
-    match numbers.get(0) {
-        Some(number) => process_number(input, number, &numbers[1..].to_vec()),
-        None => Some(0), //distributed all numbers already
-    }
-}
+pub(crate) fn find_recursively(
+    input: &str,
+    numbers: &Vec<u8>,
+    cache: &mut HashMap<JournalLine, usize>,
+) -> Option<usize> {
+    let j_line = JournalLine {
+        springs: input.to_string(),
+        numbers: numbers.clone(),
+    };
+    if let Some(cache_result) = cache.get(&j_line) {
+        return Some(*cache_result);
+    };
 
-fn process_number(input: &str, number: &u8, rest_of_numbers: &Vec<u8>) -> Option<usize> {
+    let number = match numbers.get(0) {
+        Some(number) => number,
+        None => return Some(0), //distributed all numbers already
+    };
+    let rest_of_numbers = numbers[1..].to_vec();
     let trimmed = input.trim_matches('.');
     if *number as usize > trimmed.len() {
         return None;
@@ -63,11 +54,19 @@ fn process_number(input: &str, number: &u8, rest_of_numbers: &Vec<u8>) -> Option
                 continue;
             }
         }
-        // let leftward_string = trimmed[last_dot_separator..index];
-        if trimmed[last_dot_separator..index].contains('#') {
+        let leftward_string = &trimmed[last_dot_separator..index];
+        if leftward_string.contains('#') {
             continue;
         }
         if rest_of_numbers.len() == 0 && potential_end_loc <= trimmed.len() {
+            let leftward = &trimmed[..index];
+            if leftward.contains('#') {
+                continue;
+            }
+            let rightward_string = &trimmed[potential_end_loc..];
+            if rightward_string.contains('#') {
+                continue;
+            }
             if trimmed[index..potential_end_loc]
                 .chars()
                 .all(|char| char != '.')
@@ -83,9 +82,14 @@ fn process_number(input: &str, number: &u8, rest_of_numbers: &Vec<u8>) -> Option
                 continue;
             }
 
-            let current_string = &trimmed[index..potential_end_loc + 1];
+            let leftward = &trimmed[..index];
+            if leftward.contains('#') {
+                continue;
+            }
+
+            let _current_string = &trimmed[index..potential_end_loc + 1];
             let next_string = &trimmed[potential_end_loc + 1..trimmed.len()];
-            match find_recursively(next_string, rest_of_numbers) {
+            match find_recursively(next_string, &rest_of_numbers, cache) {
                 Some(result) => {
                     acc += result;
                 }
@@ -101,6 +105,7 @@ fn process_number(input: &str, number: &u8, rest_of_numbers: &Vec<u8>) -> Option
             }
         }
     }
+    cache.insert(j_line, acc);
     Some(acc)
 }
 
@@ -110,28 +115,71 @@ mod t {
 
     #[test]
     fn break_me() {
+        let line = "?#?#?.? 2";
+        let j_line = JournalLine::parse_line(line);
+        assert_eq!(
+            find_recursively(&j_line.springs, &j_line.numbers, &mut HashMap::new()),
+            Some(0)
+        );
+
+        let line = "#????.???#?#?.? 2,2,1,2";
+        let j_line = JournalLine::parse_line(line);
+        assert_eq!(
+            find_recursively(&j_line.springs, &j_line.numbers, &mut HashMap::new()),
+            Some(2)
+        );
+
         let line = "??#.???? 4";
         let j_line = JournalLine::parse_line(line);
-        assert_eq!(find_recursively(&j_line.springs, &j_line.numbers), Some(1));
+        assert_eq!(
+            find_recursively(&j_line.springs, &j_line.numbers, &mut HashMap::new()),
+            Some(0)
+        );
 
         let line = "#????? 4";
         let j_line = JournalLine::parse_line(line);
-        assert_eq!(find_recursively(&j_line.springs, &j_line.numbers), Some(1));
+        assert_eq!(
+            find_recursively(&j_line.springs, &j_line.numbers, &mut HashMap::new()),
+            Some(1)
+        );
     }
 
     #[test]
     fn real_examples() {
+        let line = "?#??#.?????.???. 4,1";
+        let j_line = JournalLine::parse_line(line);
+        assert_eq!(
+            find_recursively(&j_line.springs, &j_line.numbers, &mut HashMap::new()),
+            Some(8)
+        );
+
+        let line = ".?????#??.#????.. 4,4";
+        let j_line = JournalLine::parse_line(line);
+        assert_eq!(
+            find_recursively(&j_line.springs, &j_line.numbers, &mut HashMap::new()),
+            Some(3)
+        );
+
         let line = "?.?#?#??#?.?#????? 4,2,5";
         let j_line = JournalLine::parse_line(line);
-        assert_eq!(find_recursively(&j_line.springs, &j_line.numbers), Some(6));
+        assert_eq!(
+            find_recursively(&j_line.springs, &j_line.numbers, &mut HashMap::new()),
+            Some(6)
+        );
 
         let line = "?##??.#??#.???.# 4,4,2,1";
         let j_line = JournalLine::parse_line(line);
-        assert_eq!(find_recursively(&j_line.springs, &j_line.numbers), Some(4));
+        assert_eq!(
+            find_recursively(&j_line.springs, &j_line.numbers, &mut HashMap::new()),
+            Some(4)
+        );
 
         let line = "#?#?.##???.?.? 4,2,1,1";
         let j_line = JournalLine::parse_line(line);
-        assert_eq!(find_recursively(&j_line.springs, &j_line.numbers), Some(5));
+        assert_eq!(
+            find_recursively(&j_line.springs, &j_line.numbers, &mut HashMap::new()),
+            Some(5)
+        );
     }
 
     #[test]
@@ -163,7 +211,7 @@ mod t {
     fn shouldnt_span_gap() {
         let input = "?.???";
         let numbers: Vec<u8> = vec![3];
-        let result = find_recursively(input, &numbers);
+        let result = find_recursively(input, &numbers, &mut HashMap::new());
         assert_eq!(result, Some(1));
     }
 
@@ -171,37 +219,37 @@ mod t {
     fn four_six_five() {
         let input = "????.######..#####.";
         let numbers: Vec<u8> = vec![1, 6, 5];
-        let result = find_recursively(input, &numbers);
+        let result = find_recursively(input, &numbers, &mut HashMap::new());
         assert_eq!(result, Some(4));
     }
     #[test]
     fn three_two_one() {
         let input = "?###????????";
         let numbers: Vec<u8> = vec![3, 2, 1];
-        let result = find_recursively(input, &numbers);
+        let result = find_recursively(input, &numbers, &mut HashMap::new());
         assert_eq!(result, Some(10));
     }
 
     #[test]
     fn examples_from_code() {
-        let input = "???.###";
-        let numbers: Vec<u8> = vec![1, 1, 3];
-        let result = find_recursively(input, &numbers);
-        assert_eq!(result, Some(1));
-
         let input = ".??..??...?##.";
         let numbers: Vec<u8> = vec![1, 1, 3];
-        let result = find_recursively(input, &numbers);
+        let result = find_recursively(input, &numbers, &mut HashMap::new());
         assert_eq!(result, Some(4));
+
+        let input = "???.###";
+        let numbers: Vec<u8> = vec![1, 1, 3];
+        let result = find_recursively(input, &numbers, &mut HashMap::new());
+        assert_eq!(result, Some(1));
 
         let input = "?#?#?#?#?#?#?#?";
         let numbers: Vec<u8> = vec![1, 3, 1, 6];
-        let result = find_recursively(input, &numbers);
+        let result = find_recursively(input, &numbers, &mut HashMap::new());
         assert_eq!(result, Some(1));
 
         let input = "????.#...#...";
         let numbers: Vec<u8> = vec![4, 1, 1];
-        let result = find_recursively(input, &numbers);
+        let result = find_recursively(input, &numbers, &mut HashMap::new());
         assert_eq!(result, Some(1));
     }
 
@@ -209,27 +257,27 @@ mod t {
     fn finds_combinations_recursively() {
         let input = "?";
         let numbers: Vec<u8> = vec![1];
-        let result = find_recursively(input, &numbers);
+        let result = find_recursively(input, &numbers, &mut HashMap::new());
         assert_eq!(result, Some(1));
 
         let input = "??";
         let numbers: Vec<u8> = vec![2];
-        let result = find_recursively(input, &numbers);
+        let result = find_recursively(input, &numbers, &mut HashMap::new());
         assert_eq!(result, Some(1));
 
         let input = "??";
         let numbers: Vec<u8> = vec![1];
-        let result = find_recursively(input, &numbers);
+        let result = find_recursively(input, &numbers, &mut HashMap::new());
         assert_eq!(result, Some(2));
 
         let input = ".??";
         let numbers: Vec<u8> = vec![1];
-        let result = find_recursively(input, &numbers);
+        let result = find_recursively(input, &numbers, &mut HashMap::new());
         assert_eq!(result, Some(2));
 
         let input = "?????";
         let numbers: Vec<u8> = vec![1, 1, 1];
-        let result = find_recursively(input, &numbers);
+        let result = find_recursively(input, &numbers, &mut HashMap::new());
         assert_eq!(result, Some(1));
     }
 
@@ -237,12 +285,12 @@ mod t {
     fn negative_example() {
         let input = "?";
         let numbers: Vec<u8> = vec![2];
-        let result = find_recursively(input, &numbers);
+        let result = find_recursively(input, &numbers, &mut HashMap::new());
         assert_eq!(result, None);
 
         let input = "??";
         let numbers: Vec<u8> = vec![1, 1];
-        let result = find_recursively(input, &numbers);
+        let result = find_recursively(input, &numbers, &mut HashMap::new());
         assert_eq!(result, Some(0));
     }
 }
