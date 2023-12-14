@@ -22,7 +22,7 @@ impl Pattern {
                     .map(|char| match char {
                         '.' => GroundType::Ash,
                         '#' => GroundType::Rocks,
-                        _ => panic!(),
+                        non_matching => panic!("{non_matching}"),
                     })
                     .collect()
             })
