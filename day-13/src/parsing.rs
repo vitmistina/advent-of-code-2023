@@ -1,6 +1,6 @@
 use crate::{GroundType, Pattern};
 
-trait Parse {
+pub trait Parse {
     fn parse_sections(input: &str) -> Vec<Pattern>;
 }
 

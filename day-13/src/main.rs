@@ -1,7 +1,22 @@
+use std::fs;
+
+use mirrors::Mirrors;
+use parsing::Parse;
+use subslice::CreatesSubslice;
+use transpose::Transposes;
+
+mod mirrors;
 mod parsing;
+mod subslice;
+mod transpose;
 
 fn main() {
-    println!("Hello, world!");
+    let input = fs::read_to_string("input.txt").unwrap();
+    let result = find_result(&input);
+
+    // 23746 too low
+    // 35210 right
+    println!("Hello, world! {result}");
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -15,118 +30,51 @@ struct Pattern {
     data: Vec<Vec<GroundType>>,
 }
 
-impl Pattern {
-    fn find_nearest_edge(&self, cut_position: &usize) -> usize {
-        let top_distance = cut_position;
-        let bottom_distance = self.data.len() - cut_position;
-        *top_distance.min(&bottom_distance)
-    }
-
-    fn create_subslice(&self, cut_position: &usize) -> Self {
-        let nearest_edge = self.find_nearest_edge(cut_position);
-
-        let subslice = self.data[cut_position - nearest_edge..cut_position + nearest_edge].to_vec();
-        Self { data: subslice }
-    }
-
-    fn find_counter_parts(
-        &self,
-        cut_position: &usize,
-        index: &usize,
-    ) -> (Vec<GroundType>, Vec<GroundType>) {
-        let counter_index = 2 * cut_position - index - 1;
-        (self.data[*index].clone(), self.data[counter_index].clone())
-    }
-
-    fn check_mirrorness(&self, cut_position: &usize) -> bool {
-        false
-    }
+#[derive(Debug, PartialEq)]
+struct Slice {
+    data: Vec<Vec<GroundType>>,
 }
 
-#[test]
-fn finds_nearest_edges() {
-    let input = Pattern {
-        data: vec![
-            vec![GroundType::Rocks],
-            vec![GroundType::Ash],
-            vec![GroundType::Ash],
-        ],
-    };
-    assert_eq!(input.find_nearest_edge(&0), 0);
-    assert_eq!(input.find_nearest_edge(&1), 1);
-    assert_eq!(input.find_nearest_edge(&2), 1);
-    assert_eq!(input.find_nearest_edge(&3), 0)
+fn find_result(input: &str) -> usize {
+    let sections = Pattern::parse_sections(input);
+    let rows = find_mirror_lines(&sections);
+    let transposed = sections.iter().map(|pattern| pattern.transpose()).collect();
+    let columns = find_mirror_lines(&transposed);
+    let row_sum: usize = rows.iter().map(|row| row * 100).sum();
+    let col_sum: usize = columns.iter().map(|col| col).sum();
+    row_sum + col_sum
 }
 
-#[test]
-fn finds_subslice() {
-    let input = Pattern {
-        data: vec![
-            vec![GroundType::Rocks],
-            vec![GroundType::Ash],
-            vec![GroundType::Ash],
-        ],
-    };
-
-    assert_eq!(
-        input.create_subslice(&1),
-        Pattern {
-            data: vec![vec![GroundType::Rocks], vec![GroundType::Ash],],
+fn find_mirror_lines(sections: &Vec<Pattern>) -> Vec<usize> {
+    let mut lines = Vec::new();
+    for pattern in sections {
+        for index in 0..pattern.data.len() {
+            let slice = pattern.create_subslice(&index);
+            if slice.check_mirrorness() == true {
+                lines.push(index);
+            }
         }
-    );
-
-    assert_eq!(
-        input.create_subslice(&2),
-        Pattern {
-            data: vec![vec![GroundType::Ash], vec![GroundType::Ash],],
-        }
-    );
+    }
+    lines
 }
 
 #[test]
-fn finds_counterpart() {
-    let input = Pattern {
-        data: vec![vec![GroundType::Rocks], vec![GroundType::Ash]],
-    };
-    assert_eq!(
-        input.find_counter_parts(&1, &0),
-        (vec![GroundType::Rocks], vec![GroundType::Ash])
-    );
+fn finds_score() {
+    let input = "#.##..##.
+..#.##.#.
+##......#
+##......#
+..#.##.#.
+..##..##.
+#.#.##.#.
 
-    let input = Pattern {
-        data: vec![
-            vec![GroundType::Rocks, GroundType::Ash],
-            vec![GroundType::Rocks, GroundType::Ash],
-            vec![GroundType::Rocks, GroundType::Ash],
-            vec![GroundType::Ash, GroundType::Rocks],
-        ],
-    };
-    assert_eq!(
-        input.find_counter_parts(&2, &0),
-        (
-            vec![GroundType::Rocks, GroundType::Ash],
-            vec![GroundType::Ash, GroundType::Rocks]
-        )
-    )
-}
-
-#[test]
-fn evaluates_subslice_mirrorness() {
-    let input = Pattern {
-        data: vec![vec![GroundType::Rocks], vec![GroundType::Ash]],
-    };
-    assert_eq!(input.check_mirrorness(&1), false);
-
-    let input = Pattern {
-        data: vec![vec![GroundType::Rocks], vec![GroundType::Rocks]],
-    };
-    assert_eq!(input.check_mirrorness(&1), true);
-
-    let input = Pattern {
-        data: vec![
-            vec![GroundType::Rocks, GroundType::Ash],
-            vec![GroundType::Ash, GroundType::Rocks],
-        ],
-    };
-    assert_eq!(input.check_mirrorness(&1), true);
+#...##..#
+#....#..#
+..##..###
+#####.##.
+#####.##.
+..##..###
+#....#..#";
+    let result = find_result(input);
+    assert_eq!(result, 405);
 }
