@@ -8,7 +8,7 @@ fn main() {
 
     let mut dish = Dish::parse(&input);
 
-    dish.tilt();
+    dish.tilt(&Direction::North);
 
     let result = dish.calculate_score();
 
@@ -16,7 +16,7 @@ fn main() {
 
     let mut dish = Dish::parse(&input);
 
-    dish.cycle(1_000_000_000);
+    dish.cycle(1000000000);
     let result = dish.calculate_score();
     println!("Hello, cycles! {result}");
 }
@@ -26,6 +26,13 @@ enum Space {
     Round,
     Cube,
     Empty,
+}
+
+enum Direction {
+    North,
+    South,
+    East,
+    West,
 }
 
 #[derive(Debug, PartialEq)]
@@ -60,37 +67,42 @@ impl Dish {
     }
 
     fn cycle(&mut self, repeats: u32) {
-        for rep in 0..repeats {
-            self.tilt();
+        let mut rep = 0;
+        while rep < repeats {
+            if rep % 10 == 0 {
+                println!("{rep}");
+            }
+            self.tilt(&Direction::North);
             // println!("  North");
             // self.print();
 
             //west
-            *self = self.transpose();
-            self.tilt();
+            // *self = self.transpose();
+            self.tilt(&Direction::West);
             // println!("  West");
             // self.print();
 
             //south
-            *self = self.transpose();
-            self.data.reverse();
-            self.tilt();
+            // *self = self.transpose();
+            // self.data.reverse();
+            self.tilt(&Direction::South);
             // println!("  South");
             // self.print();
 
             //east
-            *self = self.transpose();
-            self.data.reverse();
-            self.tilt();
+            // *self = self.transpose();
+            // self.data.reverse();
+            self.tilt(&Direction::East);
             // println!("  East");
             // self.print();
 
             //turn back north
-            self.data.reverse();
-            *self = self.transpose();
-            self.data.reverse();
+            // self.data.reverse();
+            // *self = self.transpose();
+            // self.data.reverse();
             // println!("  North");
             // self.print();
+            rep += 1;
         }
     }
 }
@@ -158,6 +170,6 @@ O.#..O.#.#
 #....###..
 #OO..#....";
     let mut dish = Dish::parse(&input);
-    dish.tilt();
+    dish.tilt(&Direction::North);
     assert_eq!(dish.calculate_score(), 136);
 }
