@@ -1,22 +1,19 @@
-use crossterm::{
-    cursor::MoveTo,
-    execute,
-    style::Print,
-    terminal::{Clear, ClearType},
-    ExecutableCommand,
-};
-use std::io::Result;
-use std::{collections::HashSet, fs};
+use std::fs;
 
 mod beaming;
+mod calculation;
 mod parsing;
 mod printing;
 
 fn main() {
     let input = fs::read_to_string("input.txt").unwrap();
     let mut grid = Grid::from(&input);
-    let result = grid.calculate();
+    let result = grid.calculate(0, 0, 90);
     println!("Hello, world! {result}");
+
+    let mut grid = Grid::from(&input);
+    let result = grid.calculate_brute_force();
+    println!("Hello, brute! {result}");
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
@@ -27,51 +24,61 @@ struct Beam {
     is_starting: bool,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 struct Mirror {
     angle: u16,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 struct Location {
     mirror: Option<Mirror>,
     is_energized: bool,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 struct Grid {
     data: Vec<Vec<Location>>,
 }
 
 impl Grid {
-    fn calculate(&mut self) -> usize {
-        let mut set = HashSet::new();
-        let starting_beam = Beam {
-            start_x: 0,
-            start_y: 0,
-            angle: 90,
-            is_starting: true,
-        };
-        let mut beams = vec![starting_beam];
+    pub fn calculate_brute_force(&mut self) -> usize {
+        let mut max = 0;
 
-        while let Some(beam) = beams.pop() {
-            let is_new = set.insert(beam.clone());
-            if is_new {
-                let mut additional_beams = beam.project(self);
-                beams.append(&mut additional_beams)
-            };
+        let y_len = self.data.len();
+        let x_len = self.data[0].len();
+
+        for y in 0..y_len {
+            let result = self.clone().calculate(0, y, 90);
+            update_max(result, &mut max);
         }
-        // println!("");
-        // self.print();
-        self.data
-            .iter()
-            .map(|row| row.iter().filter(|loc| loc.is_energized).count())
-            .sum()
+
+        for x in 0..x_len {
+            let result = self.clone().calculate(x, y_len - 1, 0);
+            update_max(result, &mut max);
+        }
+
+        for y in 0..y_len {
+            let result = self.clone().calculate(x_len - 1, y, 270);
+            update_max(result, &mut max);
+        }
+
+        for x in 0..x_len {
+            let result = self.clone().calculate(x, 0, 180);
+            update_max(result, &mut max);
+        }
+
+        max
+    }
+}
+
+fn update_max(result: usize, max: &mut usize) {
+    if result > *max {
+        *max = result;
     }
 }
 
 #[test]
-fn integration() {
+fn integration_part2() {
     let input = ".|...\\....
 |.-.\\.....
 .....|-...
@@ -83,5 +90,6 @@ fn integration() {
 .|....-|.\\
 ..//.|....";
     let mut grid = Grid::from(input);
-    assert_eq!(grid.calculate(), 46);
+
+    assert_eq!(grid.calculate_brute_force(), 51);
 }
