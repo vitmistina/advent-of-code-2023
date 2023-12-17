@@ -9,7 +9,7 @@ impl Beam {
             loc.is_energized = true;
         }
 
-        if current_x == 0 && current_y == 0 && self.angle == 90 {
+        if self.is_starting {
             if let Some(beams) = self.resolve_location(grid, current_y, current_x) {
                 return beams;
             }
@@ -49,8 +49,8 @@ impl Beam {
         current_y: usize,
         current_x: usize,
     ) -> Option<Vec<Beam>> {
-        println!("");
-        grid.print();
+        // println!("");
+        // grid.print();
         let loc = &mut grid.data[current_y][current_x];
         loc.is_energized = true;
         if let Some(mirror) = &loc.mirror {
@@ -61,11 +61,13 @@ impl Beam {
                             start_x: current_x,
                             start_y: current_y,
                             angle: (360 + self.angle + 90) % 360,
+                            is_starting: false,
                         },
                         Beam {
                             start_x: current_x,
                             start_y: current_y,
                             angle: (360 + self.angle - 90) % 360,
+                            is_starting: false,
                         },
                     ]);
                 } else {
@@ -73,6 +75,7 @@ impl Beam {
                         start_x: current_x,
                         start_y: current_y,
                         angle: calculate_angle(self.angle, mirror.angle),
+                        is_starting: false,
                     }]);
                 };
             }
@@ -111,6 +114,7 @@ fn starts_on_mirror() {
         start_x: 0,
         start_y: 0,
         angle: 90,
+        is_starting: true,
     };
 
     let mut grid = Grid {
@@ -146,6 +150,7 @@ fn starts_on_mirror() {
             start_x: 0,
             start_y: 0,
             angle: 180,
+            is_starting: false
         }
     );
 
@@ -182,6 +187,7 @@ fn energises_and_splits() {
         start_x: 0,
         start_y: 0,
         angle: 90,
+        is_starting: true,
     };
     let mut grid = Grid {
         data: vec![vec![
@@ -232,6 +238,7 @@ fn energises_and_splits() {
             start_x: 2,
             start_y: 0,
             angle: 0,
+            is_starting: false
         }
     )
 }
