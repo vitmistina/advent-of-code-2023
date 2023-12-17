@@ -1,10 +1,4 @@
-<<<<<<< HEAD
 use crate::{Beam, Grid, Location, Mirror};
-=======
-use std::ops::ControlFlow;
-
-use crate::{Beam, Grid, Location};
->>>>>>> b2f61c128398c7bed22a1f206237ee6eeb15903a
 
 impl Beam {
     pub fn project(&self, grid: &mut Grid) -> Vec<Beam> {
@@ -15,7 +9,6 @@ impl Beam {
             loc.is_energized = true;
         }
 
-<<<<<<< HEAD
         if current_x == 0 && current_y == 0 && self.angle == 90 {
             if let Some(beams) = self.resolve_location(grid, current_y, current_x) {
                 return beams;
@@ -25,11 +18,6 @@ impl Beam {
         let (y_offset, x_offset) = match self.angle {
             180 => (1, 0),
             0 => (-1, 0),
-=======
-        let (y_offset, x_offset) = match self.angle {
-            180 => (-1, 0),
-            0 => (1, 0),
->>>>>>> b2f61c128398c7bed22a1f206237ee6eeb15903a
             90 => (0, 1),
             270 => (0, -1),
             _ => panic!(),
@@ -61,11 +49,8 @@ impl Beam {
         current_y: usize,
         current_x: usize,
     ) -> Option<Vec<Beam>> {
-<<<<<<< HEAD
         println!("");
         grid.print();
-=======
->>>>>>> b2f61c128398c7bed22a1f206237ee6eeb15903a
         let loc = &mut grid.data[current_y][current_x];
         loc.is_energized = true;
         if let Some(mirror) = &loc.mirror {
@@ -75,20 +60,12 @@ impl Beam {
                         Beam {
                             start_x: current_x,
                             start_y: current_y,
-<<<<<<< HEAD
                             angle: (360 + self.angle + 90) % 360,
-=======
-                            angle: self.angle + 90,
->>>>>>> b2f61c128398c7bed22a1f206237ee6eeb15903a
                         },
                         Beam {
                             start_x: current_x,
                             start_y: current_y,
-<<<<<<< HEAD
                             angle: (360 + self.angle - 90) % 360,
-=======
-                            angle: self.angle - 90,
->>>>>>> b2f61c128398c7bed22a1f206237ee6eeb15903a
                         },
                     ]);
                 } else {
@@ -129,7 +106,6 @@ fn calculates_angles() {
 }
 
 #[test]
-<<<<<<< HEAD
 fn starts_on_mirror() {
     let beam = Beam {
         start_x: 0,
@@ -201,8 +177,6 @@ fn starts_on_mirror() {
 }
 
 #[test]
-=======
->>>>>>> b2f61c128398c7bed22a1f206237ee6eeb15903a
 fn energises_and_splits() {
     let beam = Beam {
         start_x: 0,
