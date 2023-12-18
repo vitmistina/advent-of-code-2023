@@ -1,24 +1,28 @@
-use std::collections::HashSet;
+use std::{collections::HashSet, fs};
 
-mod finder;
 mod neighbors;
 mod parsing;
 
 fn main() {
-    println!("Hello, world!");
+    let input = fs::read_to_string("input.txt").unwrap();
+    let mut grid = Grid::parse(&input, 1, 3);
+    let result = grid.find_path();
+    println!("Hello, world! {result}");
 }
 
 struct Grid {
     data: Vec<Vec<Node>>,
+    min_repeat: u8,
+    max_repeat: u8,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 struct Coordinate {
     x: usize,
     y: usize,
 }
 
-#[derive(Debug, Eq, Hash, PartialEq, Clone)]
+#[derive(Debug, Eq, Hash, PartialEq, Clone, Copy)]
 enum Direction {
     Up,
     Down,
@@ -29,18 +33,29 @@ enum Direction {
 #[derive(Debug, PartialEq, Clone)]
 struct Node {
     current_score: Option<u64>,
-    is_visited: bool,
+    heuristic_current_score: Option<u64>,
     heat_loss: u8,
     is_target: bool,
     prev_directions: Vec<Direction>,
+    coord: Coordinate,
+    allowed_visits_from: HashSet<Direction>,
 }
 
 impl Grid {
     fn find_path(&mut self) -> u64 {
-        while let Some(unvisited) = self.find_lowest_unvisited() {
-            if let Some(potential_result) = self.calculate_neighbors(&unvisited) {
-                return potential_result;
-            };
+        let mut unvisited = vec![self.data[0][0].clone()];
+        while let Some(next_node) = unvisited.pop() {
+            match self.calculate_neighbors(&next_node) {
+                (_, Some(result)) => return result,
+                (new_unvisited, None) => {
+                    if (next_node.coord.x == 5 && next_node.coord.y == 0) {
+                        println!("My problematic node");
+                    }
+                    let mut next = [unvisited.as_slice(), &new_unvisited].concat();
+                    Node::sort_by_score(&mut next);
+                    unvisited = next;
+                }
+            }
         }
         0
     }
@@ -48,13 +63,13 @@ impl Grid {
 
 impl Grid {
     fn print(&self) {
-        self.data.iter().for_each(|row| {
-            let string: String = row
-                .iter()
-                .map(|node| if node.is_visited { "#" } else { "." })
-                .collect();
-            println!("{string}");
-        });
+        // self.data.iter().for_each(|row| {
+        //     let string: String = row
+        //         .iter()
+        //         .map(|node| if node.is_visited { "#" } else { "." })
+        //         .collect();
+        //     println!("{string}");
+        // });
     }
 }
 
@@ -73,9 +88,9 @@ fn integration() {
 1224686865563
 2546548887735
 4322674655533";
-    let mut grid = Grid::parse(input);
+    let mut grid = Grid::parse(input, 1, 3);
 
     let result = grid.find_path();
-    grid.print();
+    // grid.print();
     assert_eq!(result, 102)
 }
