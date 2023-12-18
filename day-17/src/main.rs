@@ -16,7 +16,7 @@ struct Grid {
     max_repeat: u8,
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Eq, Hash, Debug, PartialEq, Clone)]
 struct Coordinate {
     x: usize,
     y: usize,
@@ -30,7 +30,7 @@ enum Direction {
     Right,
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 struct Node {
     current_score: Option<u64>,
     heuristic_current_score: Option<u64>,
@@ -44,14 +44,28 @@ struct Node {
 impl Grid {
     fn find_path(&mut self) -> u64 {
         let mut unvisited = vec![self.data[0][0].clone()];
+        let set = HashSet::from([(self.data.len(),)]);
         while let Some(next_node) = unvisited.pop() {
             match self.calculate_neighbors(&next_node) {
-                (_, Some(result)) => return result,
+                // instead wait for result from left and from right
+                (_, Some(result)) => {
+                    println!("{result}");
+                }
                 (new_unvisited, None) => {
-                    if (next_node.coord.x == 5 && next_node.coord.y == 0) {
+                    if (next_node.coord.x == 11 && next_node.coord.y == 7) {
                         println!("My problematic node");
                     }
-                    let mut next = [unvisited.as_slice(), &new_unvisited].concat();
+                    let filtered_unvisited = new_unvisited
+                        .iter()
+                        .filter(|new| {
+                            unvisited
+                                .iter()
+                                .any(|old| old.prev_directions == new.prev_directions)
+                                == false
+                        })
+                        .map(|elem| elem.clone())
+                        .collect::<Vec<Node>>();
+                    let mut next = [unvisited.as_slice(), &filtered_unvisited].concat();
                     Node::sort_by_score(&mut next);
                     unvisited = next;
                 }

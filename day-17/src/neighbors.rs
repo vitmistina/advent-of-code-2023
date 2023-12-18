@@ -21,6 +21,14 @@ impl Direction {
 
 impl Node {
     pub fn sort_by_score(nodes: &mut Vec<Node>) {
+        // let mut fset = HashSet::from(
+        //     nodes
+        //         .iter()
+        //         .map(|node| node.prev_directions.clone())
+        //         .collect::<Vec<_>>(),
+        // );
+        // let mut set = HashSet::new();
+        // set.insert(nodes[0].prev_directions.clone());
         nodes.sort_by(|b, a| a.heuristic_current_score.cmp(&b.heuristic_current_score));
     }
 
@@ -132,6 +140,12 @@ impl Grid {
         node: &Node,
         unvisited: &mut Vec<Node>,
     ) -> (Option<Node>, Option<u64>) {
+        let allowed = node.find_directions();
+
+        if allowed.contains(direction) == false {
+            return (None, None);
+        }
+
         let (y_offset, x_offset) = match direction {
             Direction::Down => (1, 0),
             Direction::Up => (-1, 0),
@@ -147,9 +161,15 @@ impl Grid {
             (Some(x), Some(y)) => {
                 let next_node = &mut self.data[y][x];
                 // if next_node.allowed_visits_from.contains(&direction) {
-                if (x == 6 && y == 0) {
-                    println!("My problematic node");
+                if (node.coord.x == 11 && node.coord.y == 7) {
+                    println!(
+                        "This should be able to reach {},{}",
+                        node.coord.y, node.coord.x
+                    );
                 }
+                // if (x == 11 && y == 7) {
+                //     println!("Evaluating my problematic node");
+                // }
                 let heuristic = (x_len - (x * 1).min(x_len) + y_len - (y * 1).min(y_len)) as u64;
                 let potential_score = node.current_score.unwrap() + next_node.heat_loss as u64;
                 if next_node.is_target == true {
@@ -158,6 +178,33 @@ impl Grid {
                 }
 
                 let prev_directions = [node.prev_directions.as_slice(), &[*direction]].concat();
+                let direction_based_y: isize = prev_directions
+                    .iter()
+                    .map(|dir| {
+                        if *dir == Direction::Down {
+                            1
+                        } else if *dir == Direction::Up {
+                            -1
+                        } else {
+                            0
+                        }
+                    })
+                    .sum();
+                assert_eq!(direction_based_y, y as isize);
+
+                let direction_based_x: isize = prev_directions
+                    .iter()
+                    .map(|dir| {
+                        if *dir == Direction::Right {
+                            1
+                        } else if *dir == Direction::Left {
+                            -1
+                        } else {
+                            0
+                        }
+                    })
+                    .sum();
+                assert_eq!(direction_based_x, x as isize);
 
                 let new_node = Node {
                     current_score: Some(potential_score),
@@ -168,12 +215,6 @@ impl Grid {
                     coord: Coordinate { x, y },
                     allowed_visits_from: next_node.allowed_visits_from.clone(),
                 };
-
-                let allowed = new_node.find_directions();
-
-                if allowed.contains(direction) == false {
-                    return (None, None);
-                }
 
                 // Update grid and push to queue, but only if score is better
                 if (next_node.heuristic_current_score.is_some()
