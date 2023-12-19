@@ -17,7 +17,7 @@ impl Grid {
                             is_target: false,
                             prev_directions: Vec::new(),
                             coord: Coordinate { x, y },
-                            allowed_visits_from: Direction::full_set(),
+                            allowed_visits_from: Direction::n_full_sets(&max_repeat),
                         }
                     })
                     .collect()

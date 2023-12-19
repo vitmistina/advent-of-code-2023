@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use super::*;
 
 impl Direction {
@@ -17,6 +19,22 @@ impl Direction {
             Direction::Up,
         ])
     }
+
+    pub fn n_full_sets(steps: &u8) -> HashMap<u8, HashSet<Self>> {
+        let mut map = HashMap::new();
+        for i in 1..*steps + 1 {
+            map.insert(
+                i,
+                HashSet::from([
+                    Direction::Right,
+                    Direction::Down,
+                    Direction::Left,
+                    Direction::Up,
+                ]),
+            );
+        }
+        map
+    }
 }
 
 impl Node {
@@ -32,7 +50,7 @@ impl Node {
         nodes.sort_by(|b, a| a.heuristic_current_score.cmp(&b.heuristic_current_score));
     }
 
-    fn find_directions(&self) -> Vec<Direction> {
+    fn find_directions(&self, max_in_direction: &usize) -> Vec<Direction> {
         let mut direction = vec![
             Direction::Right,
             Direction::Down,
@@ -45,9 +63,8 @@ impl Node {
                 direction.remove(index);
             };
 
-            let max_in_direction = 3;
-            if self.prev_directions.len() >= max_in_direction {
-                let mut slice = self.prev_directions.iter().rev().take(max_in_direction);
+            if self.prev_directions.len() >= *max_in_direction {
+                let mut slice = self.prev_directions.iter().rev().take(*max_in_direction);
                 if slice.all(|dir| dir == last_dir) {
                     if let Some(index) = direction.iter().position(|dir| dir == last_dir) {
                         direction.remove(index);
@@ -69,10 +86,10 @@ fn finds_valid_directions() {
         is_target: false,
         prev_directions: vec![],
         coord: Coordinate { x: 0, y: 0 },
-        allowed_visits_from: Direction::full_set(),
+        allowed_visits_from: Direction::n_full_sets(&3),
     };
     assert_eq!(
-        node.find_directions(),
+        node.find_directions(&3),
         Vec::from([
             Direction::Right,
             Direction::Down,
@@ -88,10 +105,10 @@ fn finds_valid_directions() {
         is_target: false,
         prev_directions: vec![Direction::Right],
         coord: Coordinate { x: 0, y: 0 },
-        allowed_visits_from: Direction::full_set(),
+        allowed_visits_from: Direction::n_full_sets(&3),
     };
     assert_eq!(
-        node.find_directions(),
+        node.find_directions(&3),
         Vec::from([Direction::Right, Direction::Down, Direction::Up,])
     );
 
@@ -102,10 +119,10 @@ fn finds_valid_directions() {
         is_target: false,
         prev_directions: vec![Direction::Right, Direction::Right, Direction::Right],
         coord: Coordinate { x: 0, y: 0 },
-        allowed_visits_from: Direction::full_set(),
+        allowed_visits_from: Direction::n_full_sets(&3),
     };
     assert_eq!(
-        node.find_directions(),
+        node.find_directions(&3),
         Vec::from([Direction::Down, Direction::Up,])
     );
 }
@@ -113,19 +130,19 @@ fn finds_valid_directions() {
 impl Grid {
     pub fn calculate_neighbors(&mut self, node: &Node) -> (Vec<Node>, Option<u64>) {
         // println!("{:?}", node);
-        let directions = node.find_directions();
+        let directions = node.find_directions(&(self.max_repeat as usize));
 
         let mut unvisited = Vec::new();
 
         for direction in directions {
             let mut current_node = node.clone();
-            for _ in 0..self.max_repeat {
-                match self.set_next_node(&direction, &current_node, &mut unvisited) {
-                    (_, Some(value)) => return (Vec::new(), Some(value)),
-                    (Some(node), _) => current_node = node,
-                    (None, None) => (),
-                };
-            }
+            // for _ in 0..self.max_repeat {
+            match self.set_next_node(&direction, &current_node, &mut unvisited) {
+                (_, Some(value)) => return (Vec::new(), Some(value)),
+                (Some(node), _) => current_node = node,
+                (None, None) => (),
+            };
+            // }
         }
         let this_node_in_grid = &mut self.data[node.coord.y][node.coord.x];
         // if let Some(direction) = node.prev_directions.iter().last() {
@@ -140,7 +157,7 @@ impl Grid {
         node: &Node,
         unvisited: &mut Vec<Node>,
     ) -> (Option<Node>, Option<u64>) {
-        let allowed = node.find_directions();
+        let allowed = node.find_directions(&(self.max_repeat as usize));
 
         if allowed.contains(direction) == false {
             return (None, None);
@@ -161,12 +178,12 @@ impl Grid {
             (Some(x), Some(y)) => {
                 let next_node = &mut self.data[y][x];
                 // if next_node.allowed_visits_from.contains(&direction) {
-                if (node.coord.x == 11 && node.coord.y == 7) {
-                    println!(
-                        "This should be able to reach {},{}",
-                        node.coord.y, node.coord.x
-                    );
-                }
+                // if (node.coord.x == 11 && node.coord.y == 7) {
+                //     println!(
+                //         "This should be able to reach {},{}",
+                //         node.coord.y, node.coord.x
+                //     );
+                // }
                 // if (x == 11 && y == 7) {
                 //     println!("Evaluating my problematic node");
                 // }
@@ -205,6 +222,9 @@ impl Grid {
                     })
                     .sum();
                 assert_eq!(direction_based_x, x as isize);
+                // Update grid and push to queue, but only if score is better
+                let last_dir_count =
+                    get_dir_count(&prev_directions, direction, &self.max_repeat.into());
 
                 let new_node = Node {
                     current_score: Some(potential_score),
@@ -216,13 +236,25 @@ impl Grid {
                     allowed_visits_from: next_node.allowed_visits_from.clone(),
                 };
 
-                // Update grid and push to queue, but only if score is better
-                if (next_node.heuristic_current_score.is_some()
-                    && potential_score + heuristic <= next_node.heuristic_current_score.unwrap()
-                    || next_node.current_score.is_none())
+                if next_node
+                    .allowed_visits_from
+                    .get(&last_dir_count)
+                    .unwrap()
+                    .contains(direction)
                 {
-                    next_node.current_score = Some(potential_score);
-                    next_node.heuristic_current_score = Some(potential_score + heuristic);
+                    if (next_node.heuristic_current_score.is_some()
+                        && potential_score + heuristic
+                            <= next_node.heuristic_current_score.unwrap()
+                        || next_node.current_score.is_none())
+                    {
+                        next_node.current_score = Some(potential_score);
+                        next_node.heuristic_current_score = Some(potential_score + heuristic);
+                    }
+                    next_node
+                        .allowed_visits_from
+                        .get_mut(&last_dir_count)
+                        .unwrap()
+                        .remove(direction);
                     unvisited.push(new_node.clone());
                 }
 
@@ -246,6 +278,29 @@ fn get_coords(index: usize, offset: i32, len: usize) -> Option<usize> {
     }
 }
 
+fn get_dir_count(
+    prev_directions: &Vec<Direction>,
+    direction: &Direction,
+    max_repeat: &usize,
+) -> u8 {
+    let mut iter = prev_directions
+        .iter()
+        .rev()
+        .take_while(|dir| *dir == direction);
+    let mut current = 0;
+    for i in 1..*max_repeat {
+        if let Some(dir) = iter.next() {
+            current = i as u8;
+        }
+    }
+    current
+}
+
+#[test]
+fn get_right_dir_counts() {
+    assert_eq!(get_dir_count(&vec![Direction::Up], &Direction::Up, &3), 1);
+}
+
 #[test]
 fn calculates_neighbors() {
     let mut grid = Grid {
@@ -256,9 +311,9 @@ fn calculates_neighbors() {
                     heuristic_current_score: Some(0),
                     heat_loss: 1,
                     is_target: false,
-                    prev_directions: vec![Direction::Down],
+                    prev_directions: vec![],
                     coord: Coordinate { x: 0, y: 0 },
-                    allowed_visits_from: Direction::full_set(),
+                    allowed_visits_from: Direction::n_full_sets(&3),
                 },
                 Node {
                     current_score: None,
@@ -267,7 +322,7 @@ fn calculates_neighbors() {
                     is_target: false,
                     prev_directions: vec![],
                     coord: Coordinate { x: 1, y: 0 },
-                    allowed_visits_from: Direction::full_set(),
+                    allowed_visits_from: Direction::n_full_sets(&3),
                 },
                 Node {
                     current_score: None,
@@ -276,7 +331,7 @@ fn calculates_neighbors() {
                     is_target: false,
                     prev_directions: vec![],
                     coord: Coordinate { x: 2, y: 0 },
-                    allowed_visits_from: Direction::full_set(),
+                    allowed_visits_from: Direction::n_full_sets(&3),
                 },
             ],
             vec![
@@ -287,7 +342,7 @@ fn calculates_neighbors() {
                     is_target: false,
                     prev_directions: vec![],
                     coord: Coordinate { x: 0, y: 1 },
-                    allowed_visits_from: Direction::full_set(),
+                    allowed_visits_from: Direction::n_full_sets(&3),
                 },
                 Node {
                     current_score: None,
@@ -296,7 +351,7 @@ fn calculates_neighbors() {
                     is_target: true,
                     prev_directions: vec![],
                     coord: Coordinate { x: 1, y: 1 },
-                    allowed_visits_from: Direction::full_set(),
+                    allowed_visits_from: Direction::n_full_sets(&3),
                 },
                 Node {
                     current_score: None,
@@ -305,7 +360,7 @@ fn calculates_neighbors() {
                     is_target: true,
                     prev_directions: vec![],
                     coord: Coordinate { x: 2, y: 1 },
-                    allowed_visits_from: Direction::full_set(),
+                    allowed_visits_from: Direction::n_full_sets(&3),
                 },
             ],
         ],
@@ -326,18 +381,18 @@ fn calculates_neighbors() {
                     heuristic_current_score: Some(8),
                     heat_loss: 4,
                     is_target: false,
-                    prev_directions: vec![Direction::Down, Direction::Down],
+                    prev_directions: vec![Direction::Down],
                     coord: Coordinate { x: 0, y: 1 },
-                    allowed_visits_from: Direction::full_set(),
+                    allowed_visits_from: Direction::n_full_sets(&3),
                 },
                 Node {
                     current_score: Some(2),
                     heuristic_current_score: Some(6),
                     heat_loss: 2,
                     is_target: false,
-                    prev_directions: vec![Direction::Down, Direction::Right],
+                    prev_directions: vec![Direction::Right],
                     coord: Coordinate { x: 1, y: 0 },
-                    allowed_visits_from: Direction::full_set(),
+                    allowed_visits_from: Direction::n_full_sets(&3),
                 },
             ],
             None

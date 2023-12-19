@@ -1,4 +1,7 @@
-use std::{collections::HashSet, fs};
+use std::{
+    collections::{HashMap, HashSet},
+    fs,
+};
 
 mod neighbors;
 mod parsing;
@@ -7,6 +10,8 @@ fn main() {
     let input = fs::read_to_string("input.txt").unwrap();
     let mut grid = Grid::parse(&input, 1, 3);
     let result = grid.find_path();
+
+    //1244 too high
     println!("Hello, world! {result}");
 }
 
@@ -38,23 +43,30 @@ struct Node {
     is_target: bool,
     prev_directions: Vec<Direction>,
     coord: Coordinate,
-    allowed_visits_from: HashSet<Direction>,
+    allowed_visits_from: HashMap<u8, HashSet<Direction>>,
 }
 
 impl Grid {
     fn find_path(&mut self) -> u64 {
         let mut unvisited = vec![self.data[0][0].clone()];
         let set = HashSet::from([(self.data.len(),)]);
+        let mut max_x = 0;
+        let mut max_y = 0;
         while let Some(next_node) = unvisited.pop() {
+            if next_node.coord.x > max_x {
+                max_x = next_node.coord.x;
+                println!("{:?}", next_node.coord);
+            }
+            if next_node.coord.y > max_y {
+                max_y = next_node.coord.y;
+                println!("{:?}", next_node.coord);
+            }
             match self.calculate_neighbors(&next_node) {
                 // instead wait for result from left and from right
                 (_, Some(result)) => {
-                    println!("{result}");
+                    return result;
                 }
                 (new_unvisited, None) => {
-                    if (next_node.coord.x == 11 && next_node.coord.y == 7) {
-                        println!("My problematic node");
-                    }
                     let filtered_unvisited = new_unvisited
                         .iter()
                         .filter(|new| {
