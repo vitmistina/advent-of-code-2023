@@ -1,8 +1,8 @@
 use super::*;
 
 impl Grid {
-    pub fn parse(input: &str, min_repeat: u8, max_repeat: u8) -> Self {
-        let mut data: Vec<Vec<Node>> = input
+    pub fn parse(input: &str, min_repeat: &u8, max_repeat: &u8) -> Self {
+        let layer: Vec<Vec<Node>> = input
             .lines()
             .enumerate()
             .map(|(y, line)| {
@@ -17,25 +17,35 @@ impl Grid {
                             is_target: false,
                             prev_directions: Vec::new(),
                             coord: Coordinate { x, y },
-                            allowed_visits_from: Direction::n_full_sets(&max_repeat),
+                            is_visited: false,
                         }
                     })
                     .collect()
             })
             .collect();
 
-        let (x_len, y_len) = { (data[0].len(), data.len()) };
+        let (x_len, y_len) = { (layer[0].len(), layer.len()) };
+
+        let mut data = HashMap::new();
+
+        for direction in Direction::full_set() {
+            for rep in 1..(max_repeat + 1) {
+                data.insert((rep.into(), direction), layer.clone());
+            }
+        }
 
         //start
-        data[0][0].current_score = Some(0);
+        data.get_mut(&(1, Direction::Right)).unwrap()[0][0].current_score = Some(0);
 
-        //target
-        data[y_len - 1][x_len - 1].is_target = true;
+        //target in each layer
+        for layer in data.values_mut() {
+            layer[y_len - 1][x_len - 1].is_target = true;
+        }
 
         Self {
             data,
-            min_repeat,
-            max_repeat,
+            min_repeat: *min_repeat,
+            max_repeat: *max_repeat,
         }
     }
 }
@@ -55,9 +65,10 @@ fn parses_grid() {
 1224686865563
 2546548887735
 4322674655533";
-    let grid = Grid::parse(input, 1, 3);
-    assert_eq!(grid.data.len(), 13);
-    assert_eq!(grid.data[0].len(), 13);
-    assert_eq!(grid.data[12][12].heat_loss, 3);
-    assert_eq!(grid.data[12][12].is_target, true);
+    let grid = Grid::parse(input, &1, &3);
+    assert_eq!(grid.data.len(), 12);
+    assert_eq!(grid.data[&(1, Direction::Left)].len(), 13);
+    assert_eq!(grid.data[&(1, Direction::Left)][0].len(), 13);
+    assert_eq!(grid.data[&(1, Direction::Left)][12][12].heat_loss, 3);
+    assert_eq!(grid.data[&(1, Direction::Left)][12][12].is_target, true);
 }
