@@ -15,6 +15,17 @@ impl System {
     }
 }
 
+impl Class {
+    pub fn new() -> Self {
+        Self {
+            x: Bounds { min: 1, max: 4000 },
+            m: Bounds { min: 1, max: 4000 },
+            a: Bounds { min: 1, max: 4000 },
+            s: Bounds { min: 1, max: 4000 },
+        }
+    }
+}
+
 #[test]
 fn parses_full_input() {
     let input = "hdj{m>838:A,pv}

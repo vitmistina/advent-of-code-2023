@@ -23,7 +23,7 @@ pub(super) fn execute(command: &Command, part: &Part) -> CommandResult {
     decide_result(&command.target)
 }
 
-fn decide_result(target: &str) -> CommandResult {
+pub(super) fn decide_result(target: &str) -> CommandResult {
     match target {
         "R" => CommandResult::Rejected,
         "A" => CommandResult::Accepted,
