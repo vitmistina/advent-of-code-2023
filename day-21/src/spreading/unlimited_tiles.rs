@@ -27,9 +27,11 @@ fn get_coords(index: usize, offset: i32, len: usize) -> Option<usize> {
 }
 
 impl Garden {
-    pub fn spread_infinitely(&mut self, iteration: &usize) {
+    pub fn spread_infinitely(&mut self, iteration: &usize, stats: &mut Stats) {
+        let mut ordered_steps = self.steps.iter().collect::<Vec<_>>();
+        ordered_steps.sort();
         let mut new_steps = HashSet::new();
-        for step in &self.steps {
+        for step in ordered_steps {
             let neighbors = step.get_neighbors_with_wrapping();
             for n in neighbors {
                 let mapped = Coordinate {
@@ -39,20 +41,82 @@ impl Garden {
                 if self.rocks.contains(&mapped) == false {
                     let tile_coord = Coordinate::identify_tile(&n, &self.x_size, &self.y_size);
                     if self.tiles.contains_key(&tile_coord) == false {
-                        self.tiles.insert(
-                            tile_coord,
-                            Tile {
-                                starting: mapped,
-                                iteration_started: *iteration,
-                            },
-                        );
+                        let tile = Tile {
+                            starting: mapped,
+                            iteration_started: *iteration,
+                        };
+                        self.tiles.insert(tile_coord.clone(), tile.clone());
+                        stats.identify_horizontal((&tile_coord, &tile), &self);
+                        stats.identify_quadrant((&tile_coord, &tile), &self.tiles);
                     }
                     new_steps.insert(n);
                 }
             }
         }
-
         self.steps = new_steps;
+
+        for ord in &mut stats.horizontals {
+            ord.snapshots.insert(
+                *iteration - ord.tile.iteration_started - ord.repeats_every,
+                self.get_snapshot(&ord.position),
+            );
+        }
+    }
+}
+
+impl Garden {
+    fn get_snapshot(&self, tile_coord: &Coordinate) -> usize {
+        let bounds = get_step_bounds(tile_coord, &self.x_size, &self.y_size);
+        self.steps
+            .iter()
+            .filter(|step| step.is_in_bounds(&bounds))
+            .count()
+    }
+}
+
+#[derive(Debug, PartialEq)]
+struct StepBounds {
+    x_min: isize,
+    x_max: isize,
+    y_min: isize,
+    y_max: isize,
+}
+
+fn get_step_bounds(tile_coord: &Coordinate, x_size: &isize, y_size: &isize) -> StepBounds {
+    let (x_min, x_max) = if tile_coord.y == 0 {
+        if tile_coord.x > 0 {
+            (tile_coord.x * *x_size, isize::MAX)
+        } else {
+            (isize::MIN, (tile_coord.x + 1) * *x_size - 1)
+        }
+    } else {
+        (0, *x_size - 1)
+    };
+
+    let (y_min, y_max) = if tile_coord.x == 0 {
+        if tile_coord.y > 0 {
+            (tile_coord.y * *y_size, isize::MAX)
+        } else {
+            (isize::MIN, (tile_coord.y + 1) * *y_size - 1)
+        }
+    } else {
+        (0, *y_size - 1)
+    };
+
+    StepBounds {
+        x_min,
+        x_max,
+        y_min,
+        y_max,
+    }
+}
+
+impl Coordinate {
+    fn is_in_bounds(&self, bounds: &StepBounds) -> bool {
+        self.x >= bounds.x_min
+            && self.x <= bounds.x_max
+            && self.y >= bounds.y_min
+            && self.y <= bounds.y_max
     }
 }
 
@@ -79,6 +143,67 @@ mod t {
     use super::*;
 
     #[test]
+    fn recognizes_bounds() {
+        let bounds = StepBounds {
+            x_min: 6,
+            x_max: isize::MAX,
+            y_min: 0,
+            y_max: 2,
+        };
+        let coord = Coordinate { x: 0, y: 0 };
+        assert_eq!(coord.is_in_bounds(&bounds), false);
+
+        let coord = Coordinate { x: 6, y: 0 };
+        assert_eq!(coord.is_in_bounds(&bounds), true);
+
+        let coord = Coordinate { x: 200, y: 0 };
+        assert_eq!(coord.is_in_bounds(&bounds), true);
+
+        let coord = Coordinate { x: 200, y: -1 };
+        assert_eq!(coord.is_in_bounds(&bounds), false);
+    }
+
+    #[test]
+    fn gets_bounds() {
+        assert_eq!(
+            get_step_bounds(&Coordinate { x: 2, y: 0 }, &3, &3),
+            StepBounds {
+                x_min: 6,
+                x_max: isize::MAX,
+                y_min: 0,
+                y_max: 2
+            }
+        );
+        assert_eq!(
+            get_step_bounds(&Coordinate { x: -2, y: 0 }, &3, &3),
+            StepBounds {
+                x_min: isize::MIN,
+                x_max: -4,
+                y_min: 0,
+                y_max: 2
+            }
+        );
+        assert_eq!(
+            get_step_bounds(&Coordinate { x: 0, y: 2 }, &3, &3),
+            StepBounds {
+                x_min: 0,
+                x_max: 2,
+                y_min: 6,
+                y_max: isize::MAX
+            }
+        );
+        assert_eq!(
+            get_step_bounds(&Coordinate { x: 0, y: -2 }, &3, &3),
+            StepBounds {
+                x_min: 0,
+                x_max: 2,
+                y_min: isize::MIN,
+                y_max: -4
+            }
+        );
+    }
+
+    #[test]
     fn get_coords() {
         let input = Coordinate { x: 1, y: 0 };
 
@@ -100,7 +225,13 @@ mod t {
             x_size: 3,
             tiles: HashMap::new(),
         };
-        garden.spread_infinitely(&1);
+        garden.spread_infinitely(
+            &1,
+            &mut Stats {
+                horizontals: Vec::new(),
+                quadrants: Vec::new(),
+            },
+        );
 
         assert_eq!(
             garden.steps,
@@ -163,7 +294,13 @@ mod t {
                 },
             )]),
         };
-        garden.spread_infinitely(&2);
+        garden.spread_infinitely(
+            &2,
+            &mut Stats {
+                horizontals: Vec::new(),
+                quadrants: Vec::new(),
+            },
+        );
 
         assert_eq!(
             garden.steps,

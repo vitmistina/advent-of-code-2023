@@ -1,19 +1,27 @@
 use super::*;
 impl Stats {
-    fn identify_horizontal(&mut self, tile: (&Coordinate, &Tile), garden: &Garden) {
-        if tile.0.x != 0 && tile.0.y != 0 {
+    pub(crate) fn identify_horizontal(
+        &mut self,
+        tile_tuple: (&Coordinate, &Tile),
+        garden: &Garden,
+    ) {
+        let coord = tile_tuple.0.clone();
+        let tile = tile_tuple.1.clone();
+
+        if coord.x != 0 && coord.y != 0 {
             return;
         }
-        let neighbors = tile.0.get_neighbors_with_wrapping();
+        let neighbors = coord.get_neighbors_with_wrapping();
         for n in neighbors {
             if let Some(prev) = garden.tiles.get(&n) {
-                if prev.starting == tile.1.starting && self.is_missing_from_horizontals(tile.0) {
+                if prev.starting == tile.starting && self.is_missing_from_horizontals(&coord) {
                     let tile_stat = TileStatistics {
-                        position: n.clone(),
+                        position: coord.clone(),
                         tile: prev.clone(),
-                        repeats_every: tile.1.iteration_started - prev.iteration_started,
+                        repeats_every: tile.iteration_started - prev.iteration_started,
+                        snapshots: HashMap::new(),
                     };
-                    self.horizontals.push((tile_stat, HashSet::new()))
+                    self.horizontals.push((tile_stat))
                 }
             };
         }
@@ -24,43 +32,24 @@ impl Stats {
             (0, _) => {
                 self.horizontals
                     .iter()
-                    .any(|(stat, _)| stat.position.x == 0)
-                    == false
+                    .filter(|stat| stat.position.x == 0)
+                    .count()
+                    < 2
             }
             (_, 0) => {
                 self.horizontals
                     .iter()
-                    .any(|(stat, _)| stat.position.y == 0)
-                    == false
+                    .filter(|stat| stat.position.y == 0)
+                    .count()
+                    < 2
             }
             (_, _) => false,
         }
     }
 }
 
-impl Garden {
-    fn get_snapshot(&self, tile_coord: &Coordinate) -> HashSet<Coordinate> {
-        self.steps
-            .iter()
-            .filter_map(|step| Some(step.clone()))
-            .collect()
-    }
-}
-
-struct StepBounds {
-    x_min: usize,
-    x_max: usize,
-    y_min: usize,
-    y_max: usize,
-}
-
-fn get_step_bounds(tile_coord: &Coordinate) -> StepBounds {
-    todo!()
-}
-
 #[cfg(test)]
 mod t {
-
     use super::*;
 
     #[test]
@@ -107,23 +96,24 @@ mod t {
 
         assert_eq!(stats.horizontals.len(), 1);
         assert_eq!(
-            stats.horizontals[0].0,
+            stats.horizontals[0],
             TileStatistics {
-                position: Coordinate { x: 2, y: 0 },
+                position: Coordinate { x: 3, y: 0 },
                 tile: Tile {
                     starting: Coordinate { x: 0, y: 0 },
                     iteration_started: 21,
                 },
-                repeats_every: 11
+                repeats_every: 11,
+                snapshots: HashMap::new()
             }
-        );
-        assert_eq!(
-            stats.horizontals[0].1,
-            HashSet::from([Coordinate { x: 3, y: 0 }, Coordinate { x: 4, y: 0 }])
         );
 
         stats.identify_horizontal((&coord, &tile), &garden);
 
-        assert_eq!(stats.horizontals.len(), 1);
+        assert_eq!(stats.horizontals.len(), 2);
+        
+        stats.identify_horizontal((&coord, &tile), &garden);
+
+        assert_eq!(stats.horizontals.len(), 2);
     }
 }

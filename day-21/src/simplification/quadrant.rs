@@ -1,7 +1,11 @@
 use super::*;
 
 impl Stats {
-    fn identify_quadrant(&mut self, tile: (&Coordinate, &Tile), map: &HashMap<Coordinate, Tile>) {
+    pub(crate) fn identify_quadrant(
+        &mut self,
+        tile: (&Coordinate, &Tile),
+        map: &HashMap<Coordinate, Tile>,
+    ) {
         if let Some(prev) = match (tile.0.x, tile.0.y) {
             (1, 2) => map.get(&Coordinate { x: 1, y: 1 }),
             (1, -2) => map.get(&Coordinate { x: 1, y: -1 }),
@@ -13,6 +17,7 @@ impl Stats {
                 position: tile.0.clone(),
                 tile: prev.clone(),
                 repeats_every: tile.1.iteration_started - prev.iteration_started,
+                snapshots: HashMap::new(),
             })
         };
     }
@@ -64,7 +69,8 @@ mod t {
                     starting: Coordinate { x: 0, y: 0 },
                     iteration_started: 15,
                 },
-                repeats_every: 11
+                repeats_every: 11,
+                snapshots: HashMap::new()
             }
         );
 
