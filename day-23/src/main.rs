@@ -3,13 +3,18 @@ use std::{
     fs,
 };
 
-mod DAG;
+mod dag;
+mod integer_programming;
 mod parsing;
+mod printing;
 
 fn main() {
     let input = &fs::read_to_string("input.txt").expect("File needs to be here");
-    let result = integrate(input);
+    let result = integrate(input, SlopesBehavior::Slippery);
     println!("Hello, world! {result}");
+
+    let result = integrate(input, SlopesBehavior::Grippy);
+    println!("Hello, traveling salesman! {result}");
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -63,15 +68,21 @@ struct Maze {
     sorted_nodes: Vec<Coordinate>,
 }
 
+#[derive(Debug, PartialEq)]
 enum SlopesBehavior {
     Slippery,
     Grippy,
 }
 
-fn integrate(input: &str) -> usize {
-    let mut maze = Maze::parse(input, SlopesBehavior::Slippery);
-    maze.topological_sort();
-    maze.find_longest_path()
+fn integrate(input: &str, slopes: SlopesBehavior) -> usize {
+    let mut maze = Maze::parse(input, &slopes);
+    if slopes == SlopesBehavior::Slippery {
+        maze.topological_sort();
+        maze.find_longest_path()
+    } else {
+        let _ = maze.save_to_graphml("big_mapmaze.graphml");
+        0
+    }
 }
 
 #[test]
@@ -100,5 +111,34 @@ fn integrates() {
 #.....###...###...#...#
 #####################.#";
 
-    assert_eq!(integrate(input), 94);
+    assert_eq!(integrate(input, SlopesBehavior::Slippery), 94);
+}
+
+#[test]
+fn integrates_grippy_slopes() {
+    let input = "#.#####################
+#.......#########...###
+#######.#########.#.###
+###.....#.>.>.###.#.###
+###v#####.#v#.###.#.###
+###.>...#.#.#.....#...#
+###v###.#.#.#########.#
+###...#.#.#.......#...#
+#####.#.#.#######.#.###
+#.....#.#.#.......#...#
+#.#####.#.#.#########v#
+#.#...#...#...###...>.#
+#.#.#v#######v###.###v#
+#...#.>.#...>.>.#.###.#
+#####v#.#.###v#.#.###.#
+#.....#...#...#.#.#...#
+#.#########.###.#.#.###
+#...###...#...#...#.###
+###.###.#.###v#####v###
+#...#...#.#.>.>.#.>.###
+#.###.###.#.###.#.#v###
+#.....###...###...#...#
+#####################.#";
+
+    assert_eq!(integrate(input, SlopesBehavior::Grippy), 154);
 }

@@ -61,12 +61,19 @@ impl Maze {
         // Check if the next coordinate is another node
         if let Some(_) = self.nodes.get(&next_coord) {
             // Found another node, create an edge
-            self.edges.push(Edge {
-                starting_node: started_from.clone(),
-                ending_node: next_coord,
-                length: length + 1,
-            });
-            return;
+            if self.edges.iter().any(|edge| {
+                edge.starting_node == next_coord && edge.ending_node == started_from.clone()
+            }) == false
+            {
+                self.edges.push(Edge {
+                    starting_node: started_from.clone(),
+                    ending_node: next_coord,
+                    length: length + 1,
+                });
+                return;
+            } else {
+                return;
+            };
         }
 
         // Continue exploring in all directions except the opposite

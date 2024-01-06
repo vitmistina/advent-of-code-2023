@@ -38,7 +38,7 @@ impl Maze {
 
 #[test]
 fn finds_longest_path() {
-    let mut maze = Maze {
+    let maze = Maze {
         grid: vec![],
         nodes: HashMap::from([
             (

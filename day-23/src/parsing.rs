@@ -6,7 +6,7 @@ mod edges;
 mod nodes;
 
 impl Maze {
-    pub(super) fn parse(input: &str, slopes: SlopesBehavior) -> Self {
+    pub(super) fn parse(input: &str, slopes: &SlopesBehavior) -> Self {
         let lines: Vec<&str> = input.split('\n').collect();
         let y_len = lines.len();
         let mut grid = Vec::new();
@@ -38,7 +38,7 @@ impl Maze {
 
         let mut maze = Maze {
             grid: grid.clone(),
-            nodes: get_nodes_from_grid(&grid, SlopesBehavior::Slippery),
+            nodes: get_nodes_from_grid(&grid, slopes),
             edges: vec![],
             sorted_nodes: vec![],
         };
@@ -68,7 +68,7 @@ fn parses_to_grid() {
         ],
     ];
 
-    let maze = Maze::parse(input, SlopesBehavior::Slippery);
+    let maze = Maze::parse(input, &SlopesBehavior::Slippery);
 
     assert_eq!(maze.grid, expected);
 }
