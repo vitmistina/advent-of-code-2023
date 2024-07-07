@@ -12,6 +12,9 @@ impl Maze {
         let mut grid = Vec::new();
 
         for (y, line) in lines.iter().enumerate() {
+            if (line.is_empty()) {
+                continue;
+            }
             let mut row = Vec::new();
             let x_len = line.len();
             for (x, ch) in line.chars().enumerate() {
@@ -27,7 +30,7 @@ impl Maze {
 
                 if x == 1 && y == 0 {
                     row.push(Tile::Start);
-                } else if x == x_len - 2 && y == y_len - 1 {
+                } else if x == x_len - 2 && y == y_len - 2 {
                     row.push(Tile::Finish);
                 } else {
                     row.push(tile);

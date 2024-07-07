@@ -4,6 +4,7 @@ use std::{
 };
 
 mod DAG;
+mod brute_force;
 mod integer_programming;
 mod parsing;
 mod printing;
@@ -34,7 +35,7 @@ enum Tile {
     Arrow(Direction),
 }
 
-#[derive(Debug, PartialEq, Eq, Hash, Clone, PartialOrd, Ord)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy, PartialOrd, Ord)]
 struct Coordinate {
     x: usize,
     y: usize,
@@ -45,6 +46,7 @@ enum NodeType {
     Start,
     Finish,
     Crossroad,
+    PreFinish,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -64,6 +66,7 @@ struct Edge {
     length: usize,
 }
 
+#[derive(Clone)]
 struct Maze {
     grid: Vec<Vec<Tile>>,
     nodes: HashMap<Coordinate, Node>,
@@ -84,7 +87,8 @@ fn integrate(input: &str, slopes: SlopesBehavior) -> usize {
         maze.find_longest_path()
     } else {
         let _ = maze.save_to_graphml("big_mapmaze.graphml");
-        0
+        let mut pathfinder = brute_force::Pathfinder::new(&maze);
+        pathfinder.find_longest_path()
     }
 }
 
@@ -143,5 +147,5 @@ fn integrates_grippy_slopes() {
 #.....###...###...#...#
 #####################.#";
 
-    // assert_eq!(integrate(input, SlopesBehavior::Grippy), 154);
+    assert_eq!(integrate(input, SlopesBehavior::Grippy), 154);
 }
