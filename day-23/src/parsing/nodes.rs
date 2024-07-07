@@ -44,36 +44,36 @@ pub(super) fn get_nodes_from_grid(
                 // Check adjacent tiles for arrows pointing away
                 if y > 0 {
                     if let Tile::Arrow(direction) = &grid[y - 1][x] {
-                        if slopes == &SlopesBehavior::Slippery && direction == &Direction::Up {
-                            exits.push(Direction::Up);
-                        } else if slopes == &SlopesBehavior::Grippy {
+                        if slopes == &SlopesBehavior::Slippery && direction == &Direction::Up
+                            || slopes == &SlopesBehavior::Grippy
+                        {
                             exits.push(Direction::Up);
                         }
                     }
                 }
                 if y < grid.len() - 1 {
                     if let Tile::Arrow(direction) = &grid[y + 1][x] {
-                        if slopes == &SlopesBehavior::Slippery && direction == &Direction::Down {
-                            exits.push(Direction::Down);
-                        } else if slopes == &SlopesBehavior::Grippy {
+                        if slopes == &SlopesBehavior::Slippery && direction == &Direction::Down
+                            || slopes == &SlopesBehavior::Grippy
+                        {
                             exits.push(Direction::Down);
                         }
                     }
                 }
                 if x > 0 {
                     if let Tile::Arrow(direction) = &grid[y][x - 1] {
-                        if slopes == &SlopesBehavior::Slippery && direction == &Direction::Left {
-                            exits.push(Direction::Left);
-                        } else if slopes == &SlopesBehavior::Grippy {
+                        if slopes == &SlopesBehavior::Slippery && direction == &Direction::Left
+                            || slopes == &SlopesBehavior::Grippy
+                        {
                             exits.push(Direction::Left);
                         }
                     }
                 }
                 if x < row.len() - 1 {
                     if let Tile::Arrow(direction) = &grid[y][x + 1] {
-                        if slopes == &SlopesBehavior::Slippery && direction == &Direction::Right {
-                            exits.push(Direction::Right);
-                        } else if slopes == &SlopesBehavior::Grippy {
+                        if slopes == &SlopesBehavior::Slippery && direction == &Direction::Right
+                            || slopes == &SlopesBehavior::Grippy
+                        {
                             exits.push(Direction::Right);
                         }
                     }

@@ -10,27 +10,27 @@ impl Maze {
         let mut file = File::create(file_path)?;
 
         // Write the header
-        write!(
+        writeln!(
             file,
-            "<graphml xmlns=\"http://graphml.graphdrawing.org/xmlns\" xmlns:y=\"http://www.yworks.com/xml/graphml\">\n"
+            "<graphml xmlns=\"http://graphml.graphdrawing.org/xmlns\" xmlns:y=\"http://www.yworks.com/xml/graphml\">"
         )?;
         // Define key for edge labels
-        write!(
+        writeln!(
             file,
-            "  <key id=\"d10\" for=\"edge\" yfiles.type=\"edgegraphics\"/>\n"
+            "  <key id=\"d10\" for=\"edge\" yfiles.type=\"edgegraphics\"/>"
         )?;
-        write!(file, "  <graph id=\"G\" edgedefault=\"undirected\">\n")?;
+        writeln!(file, "  <graph id=\"G\" edgedefault=\"undirected\">")?;
 
         // Write the nodes
-        for (coordinate, _) in &self.nodes {
-            write!(file, "    <node id=\"{:?}\"/>\n", coordinate)?;
+        for coordinate in self.nodes.keys() {
+            writeln!(file, "    <node id=\"{:?}\"/>", coordinate)?;
         }
 
         // Write the edges with labels
         for edge in &self.edges {
-            write!(
+            writeln!(
                 file,
-                "    <edge source=\"{:?}\" target=\"{:?}\">\n",
+                "    <edge source=\"{:?}\" target=\"{:?}\">",
                 edge.starting_node_loc, edge.ending_node_loc
             )?;
             // Add edge length as label in the specified format
@@ -45,7 +45,7 @@ impl Maze {
                  </data>\n",
                 edge.length
             )?;
-            write!(file, "    </edge>\n")?;
+            writeln!(file, "    </edge>")?;
         }
 
         // Close the tags

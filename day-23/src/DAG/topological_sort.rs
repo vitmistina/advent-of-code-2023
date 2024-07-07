@@ -11,28 +11,28 @@ impl Maze {
         // Initialize incoming edges count
         for edge in &self.edges {
             *incoming_edges_count
-                .entry(edge.ending_node_loc.clone())
+                .entry(edge.ending_node_loc)
                 .or_insert(0) += 1;
             no_incoming_edges.remove(&edge.ending_node_loc);
         }
 
         while let Some(node) = no_incoming_edges.iter().cloned().next() {
             no_incoming_edges.remove(&node);
-            sorted_nodes.push(node.clone());
+            sorted_nodes.push(node);
 
             let mut edges_to_remove = Vec::new();
             for edge in self.edges.clone() {
                 if edge.starting_node_loc == node {
                     *incoming_edges_count
-                        .entry(edge.ending_node_loc.clone())
+                        .entry(edge.ending_node_loc)
                         .or_insert(0) -= 1;
                     if incoming_edges_count[&edge.ending_node_loc] == 0 {
-                        no_incoming_edges.insert(edge.ending_node_loc.clone());
+                        no_incoming_edges.insert(edge.ending_node_loc);
                     }
                     edges_to_remove.push(edge.clone());
                 }
             }
-            edges.retain(|e| !edges_to_remove.contains(&e));
+            edges.retain(|e| !edges_to_remove.contains(e));
         }
 
         if !edges.is_empty() {

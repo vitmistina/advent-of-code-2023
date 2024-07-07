@@ -7,13 +7,13 @@ impl Maze {
         for (start_coord, start_node) in self.nodes.clone() {
             for exit_dir in &start_node.exits {
                 let mut visited = HashSet::new();
-                visited.insert(start_coord.clone());
+                visited.insert(start_coord);
 
                 self.explore_path(&start_coord, &start_coord, exit_dir, &mut visited, 0);
             }
         }
 
-        if (slopes == &SlopesBehavior::Grippy) {
+        if slopes == &SlopesBehavior::Grippy {
             for edge in self.edges.clone() {
                 self.edges.push(Edge {
                     starting_node_id: edge.ending_node_id,
@@ -44,14 +44,14 @@ impl Maze {
         let next_coord = match dir {
             Direction::Up => Coordinate {
                 x: coord.x,
-                y: coord.y.checked_sub(1).unwrap_or(0),
+                y: coord.y.saturating_sub(1),
             },
             Direction::Down => Coordinate {
                 x: coord.x,
                 y: coord.y.saturating_add(1),
             },
             Direction::Left => Coordinate {
-                x: coord.x.checked_sub(1).unwrap_or(0),
+                x: coord.x.saturating_sub(1),
                 y: coord.y,
             },
             Direction::Right => Coordinate {
@@ -68,19 +68,20 @@ impl Maze {
             return;
         }
 
-        visited.insert(next_coord.clone());
+        visited.insert(next_coord);
 
         // Check if the next coordinate is another node
-        if let Some(_) = self.nodes.get(&next_coord) {
+        if self.nodes.get(&next_coord).is_some() {
             // Found another node, create an edge
+            #[allow(clippy::bool_comparison)]
             if self.edges.iter().any(|edge| {
-                edge.starting_node_loc == next_coord && edge.ending_node_loc == started_from.clone()
+                edge.starting_node_loc == next_coord && edge.ending_node_loc == *started_from
             }) == false
             {
                 self.edges.push(Edge {
-                    starting_node_id: self.nodes.get(&started_from).unwrap().id,
+                    starting_node_id: self.nodes.get(started_from).unwrap().id,
                     ending_node_id: self.nodes.get(&next_coord).unwrap().id,
-                    starting_node_loc: started_from.clone(),
+                    starting_node_loc: *started_from,
                     ending_node_loc: next_coord,
                     length: length + 1,
                 });

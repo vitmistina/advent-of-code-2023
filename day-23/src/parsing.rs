@@ -12,7 +12,7 @@ impl Maze {
         let mut grid = Vec::new();
 
         for (y, line) in lines.iter().enumerate() {
-            if (line.is_empty()) {
+            if line.is_empty() {
                 continue;
             }
             let mut row = Vec::new();
@@ -50,28 +50,35 @@ impl Maze {
     }
 }
 
-#[test]
-fn parses_to_grid() {
-    let input = "v.#^#
-#.>.>";
-    let expected = vec![
-        vec![
-            Tile::Arrow(Direction::Down),
-            Tile::Start,
-            Tile::Wall,
-            Tile::Arrow(Direction::Up),
-            Tile::Wall,
-        ],
-        vec![
-            Tile::Wall,
-            Tile::Path,
-            Tile::Arrow(Direction::Right),
-            Tile::Finish,
-            Tile::Arrow(Direction::Right),
-        ],
-    ];
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use pretty_assertions::assert_eq;
 
-    let maze = Maze::parse(input, &SlopesBehavior::Slippery);
+    #[test]
+    fn parses_to_grid() {
+        let input = "v.#^#
+#.>.>
+";
+        let expected = vec![
+            vec![
+                Tile::Arrow(Direction::Down),
+                Tile::Start,
+                Tile::Wall,
+                Tile::Arrow(Direction::Up),
+                Tile::Wall,
+            ],
+            vec![
+                Tile::Wall,
+                Tile::Path,
+                Tile::Arrow(Direction::Right),
+                Tile::Finish,
+                Tile::Arrow(Direction::Right),
+            ],
+        ];
 
-    assert_eq!(maze.grid, expected);
+        let maze = Maze::parse(input, &SlopesBehavior::Slippery);
+
+        assert_eq!(maze.grid, expected);
+    }
 }

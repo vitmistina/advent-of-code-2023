@@ -5,7 +5,6 @@ use std::{
 
 mod DAG;
 mod brute_force;
-mod integer_programming;
 mod parsing;
 mod printing;
 
@@ -116,7 +115,8 @@ fn integrates() {
 #...#...#.#.>.>.#.>.###
 #.###.###.#.###.#.#v###
 #.....###...###...#...#
-#####################.#";
+#####################.#
+";
 
     assert_eq!(integrate(input, SlopesBehavior::Slippery), 94);
 }
@@ -145,7 +145,8 @@ fn integrates_grippy_slopes() {
 #...#...#.#.>.>.#.>.###
 #.###.###.#.###.#.#v###
 #.....###...###...#...#
-#####################.#";
+#####################.#
+";
 
     assert_eq!(integrate(input, SlopesBehavior::Grippy), 154);
 }
