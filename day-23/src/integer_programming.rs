@@ -3,7 +3,7 @@ use super::*;
 fn create_connection_matrix(edges: &[Edge]) -> Vec<Vec<usize>> {
     // Step 1: Determine Matrix Size
     let max_index = edges.iter().fold(0, |max, edge| {
-        max.max(edge.starting_node.x.max(edge.ending_node.x))
+        max.max(edge.starting_node_loc.x.max(edge.ending_node_loc.x))
     }) + 1; // +1 because nodes are zero-indexed
 
     // Step 2: Initialize Matrix
@@ -11,8 +11,8 @@ fn create_connection_matrix(edges: &[Edge]) -> Vec<Vec<usize>> {
 
     // Step 3: Set Connections
     for edge in edges {
-        matrix[edge.starting_node.x][edge.ending_node.x] = 1;
-        matrix[edge.ending_node.x][edge.starting_node.x] = 1; // Because the graph is undirected
+        matrix[edge.starting_node_loc.x][edge.ending_node_loc.x] = 1;
+        matrix[edge.ending_node_loc.x][edge.starting_node_loc.x] = 1; // Because the graph is undirected
     }
 
     matrix
@@ -21,7 +21,7 @@ fn create_connection_matrix(edges: &[Edge]) -> Vec<Vec<usize>> {
 fn create_distance_matrix(edges: &[Edge]) -> Vec<Vec<usize>> {
     // Step 1: Determine Matrix Size
     let max_index = edges.iter().fold(0, |max, edge| {
-        max.max(edge.starting_node.x.max(edge.ending_node.x))
+        max.max(edge.starting_node_loc.x.max(edge.ending_node_loc.x))
     }) + 1; // +1 because nodes are zero-indexed
 
     // Step 2: Initialize Matrix
@@ -29,8 +29,8 @@ fn create_distance_matrix(edges: &[Edge]) -> Vec<Vec<usize>> {
 
     // Step 3: Set Connections
     for edge in edges {
-        matrix[edge.starting_node.x][edge.ending_node.x] = edge.length;
-        matrix[edge.ending_node.x][edge.starting_node.x] = edge.length; // Because the graph is undirected
+        matrix[edge.starting_node_loc.x][edge.ending_node_loc.x] = edge.length;
+        matrix[edge.ending_node_loc.x][edge.starting_node_loc.x] = edge.length; // Because the graph is undirected
     }
 
     matrix
@@ -44,13 +44,17 @@ mod tests {
     fn test_matrix_of_connections() {
         let edges = vec![
             Edge {
-                starting_node: Coordinate { x: 0, y: 0 },
-                ending_node: Coordinate { x: 1, y: 1 },
+                starting_node_id: 0,
+                ending_node_id: 1,
+                starting_node_loc: Coordinate { x: 0, y: 0 },
+                ending_node_loc: Coordinate { x: 1, y: 1 },
                 length: 50,
             },
             Edge {
-                starting_node: Coordinate { x: 0, y: 0 },
-                ending_node: Coordinate { x: 2, y: 2 },
+                starting_node_id: 0,
+                ending_node_id: 1,
+                starting_node_loc: Coordinate { x: 0, y: 0 },
+                ending_node_loc: Coordinate { x: 2, y: 2 },
                 length: 60,
             },
         ];
@@ -69,13 +73,17 @@ mod tests {
     fn test_matrix_of_distances() {
         let edges = vec![
             Edge {
-                starting_node: Coordinate { x: 0, y: 0 },
-                ending_node: Coordinate { x: 1, y: 1 },
+                starting_node_id: 0,
+                ending_node_id: 1,
+                starting_node_loc: Coordinate { x: 0, y: 0 },
+                ending_node_loc: Coordinate { x: 1, y: 1 },
                 length: 5,
             },
             Edge {
-                starting_node: Coordinate { x: 0, y: 0 },
-                ending_node: Coordinate { x: 2, y: 2 },
+                starting_node_id: 0,
+                ending_node_id: 1,
+                starting_node_loc: Coordinate { x: 0, y: 0 },
+                ending_node_loc: Coordinate { x: 2, y: 2 },
                 length: 9,
             },
         ];

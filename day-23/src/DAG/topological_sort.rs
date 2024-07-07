@@ -11,9 +11,9 @@ impl Maze {
         // Initialize incoming edges count
         for edge in &self.edges {
             *incoming_edges_count
-                .entry(edge.ending_node.clone())
+                .entry(edge.ending_node_loc.clone())
                 .or_insert(0) += 1;
-            no_incoming_edges.remove(&edge.ending_node);
+            no_incoming_edges.remove(&edge.ending_node_loc);
         }
 
         while let Some(node) = no_incoming_edges.iter().cloned().next() {
@@ -22,12 +22,12 @@ impl Maze {
 
             let mut edges_to_remove = Vec::new();
             for edge in self.edges.clone() {
-                if edge.starting_node == node {
+                if edge.starting_node_loc == node {
                     *incoming_edges_count
-                        .entry(edge.ending_node.clone())
+                        .entry(edge.ending_node_loc.clone())
                         .or_insert(0) -= 1;
-                    if incoming_edges_count[&edge.ending_node] == 0 {
-                        no_incoming_edges.insert(edge.ending_node.clone());
+                    if incoming_edges_count[&edge.ending_node_loc] == 0 {
+                        no_incoming_edges.insert(edge.ending_node_loc.clone());
                     }
                     edges_to_remove.push(edge.clone());
                 }
@@ -52,6 +52,7 @@ fn sorts_in_topological_order() {
             (
                 Coordinate { x: 1, y: 0 },
                 Node {
+                    id: 0,
                     is_visited: false,
                     node_type: NodeType::Start,
                     exits: vec![Direction::Down],
@@ -60,6 +61,7 @@ fn sorts_in_topological_order() {
             (
                 Coordinate { x: 2, y: 3 },
                 Node {
+                    id: 1,
                     is_visited: false,
                     node_type: NodeType::Crossroad,
                     exits: vec![Direction::Left, Direction::Right],
@@ -68,6 +70,7 @@ fn sorts_in_topological_order() {
             (
                 Coordinate { x: 4, y: 4 },
                 Node {
+                    id: 2,
                     is_visited: false,
                     node_type: NodeType::Finish,
                     exits: vec![],
@@ -76,18 +79,24 @@ fn sorts_in_topological_order() {
         ]),
         edges: vec![
             Edge {
-                starting_node: Coordinate { x: 1, y: 0 },
-                ending_node: Coordinate { x: 2, y: 3 },
+                starting_node_id: 0,
+                ending_node_id: 1,
+                starting_node_loc: Coordinate { x: 1, y: 0 },
+                ending_node_loc: Coordinate { x: 2, y: 3 },
                 length: 4,
             },
             Edge {
-                starting_node: Coordinate { x: 2, y: 3 },
-                ending_node: Coordinate { x: 4, y: 4 },
+                starting_node_id: 0,
+                ending_node_id: 1,
+                starting_node_loc: Coordinate { x: 2, y: 3 },
+                ending_node_loc: Coordinate { x: 4, y: 4 },
                 length: 3,
             },
             Edge {
-                starting_node: Coordinate { x: 2, y: 3 },
-                ending_node: Coordinate { x: 4, y: 4 },
+                starting_node_id: 0,
+                ending_node_id: 1,
+                starting_node_loc: Coordinate { x: 2, y: 3 },
+                ending_node_loc: Coordinate { x: 4, y: 4 },
                 length: 7,
             },
         ],

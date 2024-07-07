@@ -31,7 +31,7 @@ impl Maze {
             write!(
                 file,
                 "    <edge source=\"{:?}\" target=\"{:?}\">\n",
-                edge.starting_node, edge.ending_node
+                edge.starting_node_loc, edge.ending_node_loc
             )?;
             // Add edge length as label in the specified format
             write!(

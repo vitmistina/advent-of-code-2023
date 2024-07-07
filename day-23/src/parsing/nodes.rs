@@ -87,6 +87,7 @@ pub(super) fn get_nodes_from_grid(
                 nodes.insert(
                     coord,
                     Node {
+                        id: nodes.len(),
                         is_visited: false,
                         node_type,
                         exits,
@@ -148,6 +149,7 @@ fn parses_grid_to_nodes() {
         (
             Coordinate { x: 1, y: 0 },
             Node {
+                id: 0,
                 is_visited: false,
                 node_type: NodeType::Start,
                 exits: vec![Direction::Down],
@@ -156,6 +158,7 @@ fn parses_grid_to_nodes() {
         (
             Coordinate { x: 2, y: 3 },
             Node {
+                id: 1,
                 is_visited: false,
                 node_type: NodeType::Crossroad,
                 exits: vec![Direction::Left, Direction::Right],
@@ -164,6 +167,7 @@ fn parses_grid_to_nodes() {
         (
             Coordinate { x: 4, y: 4 },
             Node {
+                id: 2,
                 is_visited: false,
                 node_type: NodeType::Finish,
                 exits: vec![],
@@ -225,6 +229,7 @@ fn parses_grippy_slopes_to_nodes() {
         (
             Coordinate { x: 1, y: 0 },
             Node {
+                id: 0,
                 is_visited: false,
                 node_type: NodeType::Start,
                 exits: vec![Direction::Down],
@@ -233,6 +238,7 @@ fn parses_grippy_slopes_to_nodes() {
         (
             Coordinate { x: 2, y: 3 },
             Node {
+                id: 1,
                 is_visited: false,
                 node_type: NodeType::Crossroad,
                 exits: vec![Direction::Up, Direction::Left, Direction::Right],
@@ -241,6 +247,7 @@ fn parses_grippy_slopes_to_nodes() {
         (
             Coordinate { x: 4, y: 4 },
             Node {
+                id: 2,
                 is_visited: false,
                 node_type: NodeType::Finish,
                 exits: vec![],

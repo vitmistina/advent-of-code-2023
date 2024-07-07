@@ -42,7 +42,7 @@ impl Maze {
             edges: vec![],
             sorted_nodes: vec![],
         };
-        maze.find_edges();
+        maze.find_edges(slopes);
         maze
     }
 }
