@@ -53,8 +53,10 @@ pub(crate) struct Pathfinder {
 
 impl Pathfinder {
     pub(crate) fn new(maze: &Maze) -> Pathfinder {
+        let mut maze = maze.clone();
+        maze.find_prefinish();
         Pathfinder {
-            maze: maze.clone(),
+            maze: maze,
             queue: VecDeque::new(),
             longest_path: None,
         }
@@ -78,8 +80,9 @@ impl Pathfinder {
             new_path.length += edge.length;
             new_path.next_node = Some(edge.ending_node_loc);
 
-            if self.longest_path.is_none() && next_node.node_type == NodeType::Finish
-                || new_path.length > self.longest_path.as_ref().unwrap().length
+            if next_node.node_type == NodeType::Finish
+                && (self.longest_path.is_none()
+                    || new_path.length > self.longest_path.as_ref().unwrap().length)
             {
                 self.longest_path = Some(new_path.clone());
             }

@@ -80,15 +80,20 @@ enum SlopesBehavior {
 }
 
 fn integrate(input: &str, slopes: SlopesBehavior) -> usize {
+    let start_timestamp = std::time::Instant::now();
     let mut maze = Maze::parse(input, &slopes);
+    let mut result = 0;
     if slopes == SlopesBehavior::Slippery {
         maze.topological_sort();
-        maze.find_longest_path()
+        result = maze.find_longest_path();
     } else {
         let _ = maze.save_to_graphml("big_mapmaze.graphml");
         let mut pathfinder = brute_force::Pathfinder::new(&maze);
-        pathfinder.find_longest_path()
+        result = pathfinder.find_longest_path();
     }
+    let end_timestamp = std::time::Instant::now();
+    println!("Time elapsed: {:?}", end_timestamp - start_timestamp);
+    result
 }
 
 #[test]
