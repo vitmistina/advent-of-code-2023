@@ -56,7 +56,7 @@ impl Pathfinder {
         let mut maze = maze.clone();
         maze.find_prefinish();
         Pathfinder {
-            maze: maze,
+            maze,
             queue: VecDeque::new(),
             longest_path: None,
         }
@@ -70,8 +70,10 @@ impl Pathfinder {
             if path.visited_nodes.contains(&edge.ending_node_loc) {
                 continue;
             }
+            // number 6 is selected to have a margin of some nodes before reaching the prefinish node
+            // it should be among the last, but maybe not the precisely last but one
             if next_node.node_type == NodeType::PreFinish
-                && path.visited_nodes.len() < self.maze.nodes.len() - 3
+                && path.visited_nodes.len() < self.maze.nodes.len() - 6
             {
                 continue;
             }
