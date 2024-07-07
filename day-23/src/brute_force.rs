@@ -1,5 +1,3 @@
-use std::collections::VecDeque;
-
 use super::*;
 
 // there is only one node of type Crossroad which is before the Finish node, find it and mark it as type PreFinish
@@ -47,7 +45,7 @@ impl Maze {
 
 pub(crate) struct Pathfinder {
     maze: Maze,
-    queue: VecDeque<Path>,
+    queue: Vec<Path>,
     longest_path: Option<Path>,
 }
 
@@ -57,7 +55,7 @@ impl Pathfinder {
         maze.find_prefinish();
         Pathfinder {
             maze,
-            queue: VecDeque::new(),
+            queue: Vec::new(),
             longest_path: None,
         }
     }
@@ -89,7 +87,7 @@ impl Pathfinder {
                 self.longest_path = Some(new_path.clone());
             }
 
-            self.queue.push_back(new_path);
+            self.queue.push(new_path);
         }
     }
 
@@ -100,10 +98,10 @@ impl Pathfinder {
             length: 0,
             next_node: Some(start),
         };
-        self.queue.push_back(path);
+        self.queue.push(path);
 
         while !self.queue.is_empty() {
-            let path = self.queue.pop_front().unwrap();
+            let path = self.queue.pop().unwrap();
             self.process_node(&path);
         }
 
@@ -263,7 +261,7 @@ mod tests {
         pathfinder.process_node(&path.clone());
 
         assert_eq!(pathfinder.queue.len(), 1);
-        let path = pathfinder.queue.pop_front().unwrap();
+        let path = pathfinder.queue.pop().unwrap();
         assert_eq!(path.length, 3);
         assert_eq!(path.visited_nodes.len(), 2);
         assert_eq!(path.next_node, Some(Coordinate { x: 1, y: 3 }));
@@ -294,7 +292,7 @@ mod tests {
         pathfinder.process_node(&path.clone());
 
         assert_eq!(pathfinder.queue.len(), 1);
-        let path = pathfinder.queue.pop_front().unwrap();
+        let path = pathfinder.queue.pop().unwrap();
         assert_eq!(path.length, 4);
         assert_eq!(path.visited_nodes.len(), 4);
         assert_eq!(path.next_node, Some(Coordinate { x: 2, y: 3 }));
