@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use super::Graph;
 
 impl Graph {
-    pub fn find_communities(&self) -> Vec<HashSet<String>> {
+    fn find_communities(&self) -> Vec<HashSet<String>> {
         let mut communities = Vec::new();
         let mut visited = HashSet::new();
 
@@ -21,6 +21,18 @@ impl Graph {
         }
 
         communities
+    }
+
+    fn multiply(communities: &[HashSet<String>]) -> usize {
+        communities.iter().map(|c| c.len()).product()
+    }
+
+    pub fn find_two_community_product(&self) -> Option<usize> {
+        let communities = self.find_communities();
+        if communities.len() != 2 {
+            return None;
+        }
+        Some(Self::multiply(&communities))
     }
 
     fn depth_first_search(&self, start: &String) -> HashSet<String> {
@@ -77,5 +89,14 @@ mod tests {
         let graph = Graph::from_input(input);
         let communities = graph.find_communities();
         assert_eq!(communities.len(), 2);
+    }
+
+    #[test]
+    fn multiplies_community_sizes() {
+        let input = "jqt: rhn xhk nvd
+        jjj: aaa bbb ccc";
+        let graph = Graph::from_input(input);
+        let product = graph.find_two_community_product().unwrap();
+        assert_eq!(product, 16);
     }
 }
