@@ -5,10 +5,40 @@ use super::Graph;
 impl Graph {
     fn write_node(id: &str) -> String {
         format!(
-            "<node id=\"{}\">\n<data>\n
-            <y:Label>\n<y:Label.Text>{}</y:Label.Text></y:Label>\n
-            </data></node>\n",
-            id, id
+            "<node id=\"{}\">
+            <data key=\"d3\"><![CDATA[{}]]></data>
+            <data key=\"d4\">
+				<x:List>
+					<y:Label>
+						<y:Label.Text>{}</y:Label.Text>
+						<y:Label.LayoutParameter>
+							<y:CompositeLabelModelParameter>
+								<y:CompositeLabelModelParameter.Parameter>
+									<y:InteriorLabelModelParameter Position=\"Center\" Model=\"{{y:GraphMLReference 2}}\"/>
+								</y:CompositeLabelModelParameter.Parameter>
+								<y:CompositeLabelModelParameter.Model>
+									<y:CompositeLabelModel>
+										<y:CompositeLabelModel.LabelModels>
+											<y:ExteriorLabelModel Insets=\"5\"/>
+											<y:GraphMLReference ResourceKey=\"2\"/>
+											<x:Static Member=\"y:FreeNodeLabelModel.Instance\"/>
+										</y:CompositeLabelModel.LabelModels>
+									</y:CompositeLabelModel>
+								</y:CompositeLabelModelParameter.Model>
+							</y:CompositeLabelModelParameter>
+						</y:Label.LayoutParameter>
+						<y:Label.Style>
+							<yjs:DefaultLabelStyle verticalTextAlignment=\"CENTER\" horizontalTextAlignment=\"CENTER\" textFill=\"BLACK\">
+								<yjs:DefaultLabelStyle.font>
+									<yjs:Font fontSize=\"12\"/>
+								</yjs:DefaultLabelStyle.font>
+							</yjs:DefaultLabelStyle>
+						</y:Label.Style>
+					</y:Label>
+				</x:List>
+			</data>
+            </node>\n",
+            id, id, id
         )
     }
 
@@ -17,7 +47,7 @@ impl Graph {
         let mut file = File::create(path).unwrap();
         file.write_all(b"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n")
             .unwrap();
-        file.write_all(b"<graphml xmlns=\"http://graphml.graphdrawing.org/xmlns\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"http://graphml.graphdrawing.org/xmlns http://graphml.graphdrawing.org/xmlns/1.0/graphml.xsd\">\n").unwrap();
+        file.write_all(b"<graphml xsi:schemaLocation=\"http://graphml.graphdrawing.org/xmlns http://www.yworks.com/xml/schema/graphml.html/2.0/ygraphml.xsd \" xmlns=\"http://graphml.graphdrawing.org/xmlns\" xmlns:demostyle2=\"http://www.yworks.com/yFilesHTML/demos/FlatDemoStyle/2.0\" xmlns:demostyle=\"http://www.yworks.com/yFilesHTML/demos/FlatDemoStyle/1.0\" xmlns:icon-style=\"http://www.yworks.com/yed-live/icon-style/1.0\" xmlns:bpmn=\"http://www.yworks.com/xml/yfiles-bpmn/2.0\" xmlns:demotablestyle=\"http://www.yworks.com/yFilesHTML/demos/FlatDemoTableStyle/1.0\" xmlns:uml=\"http://www.yworks.com/yFilesHTML/demos/UMLDemoStyle/1.0\" xmlns:GraphvizNodeStyle=\"http://www.yworks.com/yFilesHTML/graphviz-node-style/1.0\" xmlns:Vue2jsNodeStyle=\"http://www.yworks.com/demos/yfiles-vuejs-node-style/1.0\" xmlns:Vue3jsNodeStyle=\"http://www.yworks.com/demos/yfiles-vue-node-style/3.0\" xmlns:explorer-style=\"http://www.yworks.com/data-explorer/1.0\" xmlns:y=\"http://www.yworks.com/xml/yfiles-common/3.0\" xmlns:x=\"http://www.yworks.com/xml/yfiles-common/markup/3.0\" xmlns:yjs=\"http://www.yworks.com/xml/yfiles-for-html/2.0/xaml\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">\n").unwrap();
         file.write_all(b"<graph id=\"G\" edgedefault=\"undirected\">\n")
             .unwrap();
 
