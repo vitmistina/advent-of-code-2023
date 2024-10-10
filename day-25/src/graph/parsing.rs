@@ -5,6 +5,7 @@ impl Graph {
         let mut graph = Graph {
             edges: Default::default(),
             nodes: Default::default(),
+            memory: Default::default(),
         };
 
         for line in input.lines() {
@@ -16,7 +17,11 @@ impl Graph {
                 let mut nodes = vec![node.to_string(), neighbor.to_string()];
                 nodes.sort();
 
-                let edge = Edge { nodes, weight: 1 };
+                let edge = Edge {
+                    nodes,
+                    weight: 1,
+                    connectivity_score: None,
+                };
 
                 if !graph.edges.contains(&edge) {
                     graph.edges.insert(edge);
@@ -64,18 +69,22 @@ mod tests {
             Edge {
                 nodes: vec!["jqt".to_string(), "rhn".to_string()],
                 weight: 1,
+                connectivity_score: None,
             },
             Edge {
                 nodes: vec!["jqt".to_string(), "xhk".to_string()],
                 weight: 1,
+                connectivity_score: None,
             },
             Edge {
                 nodes: vec!["jqt".to_string(), "nvd".to_string()],
                 weight: 1,
+                connectivity_score: None,
             },
             Edge {
                 nodes: vec!["kqr".to_string(), "xhk".to_string()],
                 weight: 1,
+                connectivity_score: None,
             },
         ]
         .iter()

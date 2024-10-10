@@ -1,23 +1,22 @@
 use std::collections::{HashMap, HashSet};
 
 use std::fs::File;
-use std::io::{self, Write};
+use std::io::Write;
 
-mod communities;
-mod export;
 mod parsing;
-mod removal;
 
 #[derive(Debug, Clone)]
 pub(super) struct Graph {
     edges: HashSet<Edge>,
     nodes: HashSet<Node>,
+    memory: HashMap<Vec<String>, usize>,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Hash)]
 pub(super) struct Edge {
     nodes: Vec<String>,
     weight: usize,
+    connectivity_score: Option<usize>,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Hash)]
@@ -28,25 +27,25 @@ struct Node {
 impl Node {
     fn get_previous_nodes(&self) -> Vec<String> {
         if self.contains.is_empty() {
-            return vec![self.id.clone()];
+            vec![self.id.clone()]
         } else {
-            return self.contains.clone();
+            self.contains.clone()
         }
     }
 }
 
 impl Graph {
-    pub fn export(input: &str) {
-        let graph = Graph::from_input(input);
-        graph.export_to_graph_ml();
-    }
-
-    pub fn sort_edge_scores(&self) -> Vec<(Edge, usize)> {
+    fn sort_edge_scores(&mut self) -> Vec<(Edge, usize)> {
         let mut edge_scores = Vec::new();
 
-        for edge in &self.edges {
-            let score = self.calculate_connectivity_score(&edge);
-            edge_scores.push((edge.clone(), score));
+        for edge in self.edges.iter() {
+            if let Some(score) = self.memory.get(&edge.nodes) {
+                edge_scores.push((edge.clone(), *score));
+            } else {
+                let score = self.calculate_connectivity_score(edge);
+                self.memory.insert(edge.nodes.clone(), score);
+                edge_scores.push((edge.clone(), score));
+            }
         }
 
         edge_scores.sort_by(|a, b| a.1.cmp(&b.1));
@@ -67,9 +66,7 @@ impl Graph {
 
     pub fn find_cut_product(&mut self) -> Option<usize> {
         let mut generation = 0;
-        // let mut file = File::create("output.txt").expect("Unable to create file");
 
-        // while let Some(edge) = self.find_least_connected_edge(Some(&mut file)) {
         while let Some(edge) = self.find_least_connected_edge(None) {
             let new_id = generation.to_string();
             self.merge_nodes(&edge.nodes[0], &edge.nodes[1], &new_id);
@@ -79,10 +76,6 @@ impl Graph {
                 generation,
                 self.nodes.len()
             );
-
-            // writeln!(file, "Least connected edge: {:#?}", edge).expect("Unable to write to file");
-            // writeln!(file, "Generation {}: {:#?}", generation, self)
-            //     .expect("Unable to write to file");
 
             generation += 1;
 
@@ -94,7 +87,6 @@ impl Graph {
                     .iter()
                     .find(|n| n.id == *three_degree_node)
                     .unwrap();
-                println!("Found a node with degree 3: {:?}", three_degree_node);
                 return Some(
                     three_degree_node.get_previous_nodes().len()
                         * self
@@ -105,30 +97,12 @@ impl Graph {
                             .sum::<usize>(),
                 );
             }
-            // if self.edges.len() == 1 || node_degrees.values().any(|&v| v == 3) {
-            //     println!("Found a node with degree 3 or only one edge left");
-            //     println!("Degrees: {:#?}", node_degrees);
-            //     return Some(
-            //         self.nodes
-            //             .iter()
-            //             .map(|n| n.get_previous_nodes().len())
-            //             .product(),
-            //     );
-            // }
-
-            // if generation > 20 {
-            //     break;đ
-            // }
         }
 
         None
     }
 
-    fn find_node_by_id(&self, id: &str) -> Option<Node> {
-        self.nodes.iter().find(|n| n.id == id).cloned()
-    }
-
-    fn find_least_connected_edge(&self, mut file: Option<&mut File>) -> Option<Edge> {
+    fn find_least_connected_edge(&mut self, mut file: Option<&mut File>) -> Option<Edge> {
         let mut current_min = usize::MAX;
         let mut current_max_weight = usize::MIN;
         let mut best_edge = None;
@@ -162,7 +136,20 @@ impl Graph {
         best_edge
     }
 
-    pub fn calculate_connectivity_score(&self, edge: &Edge) -> usize {
+    fn neighbors(&self, node: &String) -> Vec<String> {
+        self.edges
+            .iter()
+            .filter_map(|edge| {
+                if edge.nodes.contains(node) {
+                    Some(edge.nodes.iter().find(|n| n != &node).unwrap().clone())
+                } else {
+                    None
+                }
+            })
+            .collect()
+    }
+
+    fn calculate_connectivity_score(&self, edge: &Edge) -> usize {
         let mut other_nodes = HashSet::new();
 
         for node in &edge.nodes {
@@ -184,35 +171,25 @@ impl Graph {
                     .sum::<usize>()
             })
             .sum::<usize>();
-        // - self
-        //     .find_node_by_id(&edge.nodes[0])
-        //     .unwrap()
-        //     .get_previous_nodes()
-        //     .len()
-        // - self
-        //     .find_node_by_id(&edge.nodes[1])
-        //     .unwrap()
-        //     .get_previous_nodes()
-        //     .len();
-        // - edge.weight;
+
         connectivity_score
     }
 
-    pub fn merge_nodes(&mut self, node1: &str, node2: &str, new_id: &str) {
+    fn merge_nodes(&mut self, node1: &str, node2: &str, new_id: &str) {
         let node1 = self.nodes.iter().find(|n| n.id == node1).cloned();
         let node2 = self.nodes.iter().find(|n| n.id == node2).cloned();
 
         if let (Some(node1), Some(node2)) = (node1, node2) {
-            let mut new_node = Node {
+            let new_node = Node {
                 id: new_id.to_string(),
-                contains: vec![node1.get_previous_nodes(), node2.get_previous_nodes()].concat(),
+                contains: [node1.get_previous_nodes(), node2.get_previous_nodes()].concat(),
             };
 
             let mut new_edges = HashSet::new();
             let mut edge_weights: HashMap<(String, String), usize> = HashMap::new();
 
             for edge in &self.edges {
-                let mut new_edge = edge.clone();
+                let new_edge = edge.clone();
                 let mut nodes = new_edge.nodes.clone();
                 let weight = new_edge.weight;
 
@@ -247,6 +224,7 @@ impl Graph {
                 new_edges.insert(Edge {
                     nodes: vec![node_a, node_b],
                     weight,
+                    connectivity_score: None,
                 });
             }
 
@@ -261,28 +239,6 @@ impl Graph {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn runs_sample() {
-        let input = "jqt: rhn xhk nvd
-        rsh: frs pzl lsr
-        xhk: hfx
-        cmg: qnr nvd lhk bvb
-        rhn: xhk bvb hfx
-        bvb: xhk hfx
-        pzl: lsr hfx nvd
-        qnr: nvd
-        ntq: jqt hfx bvb xhk
-        nvd: lhk
-        lsr: lhk
-        rzs: qnr cmg lsr rsh
-        frs: qnr lhk lsr";
-        let mut graph = Graph::from_input(input);
-        graph.remove_edge("hfx", "pzl");
-        graph.remove_edge("bvb", "cmg");
-        graph.remove_edge("nvd", "jqt");
-        assert_eq!(graph.find_two_community_product(), Some(54));
-    }
 
     #[test]
     fn runs_merging_algorithm() {
@@ -309,7 +265,7 @@ mod tests {
         b: c d
         c: d e
         x: y";
-        let graph = Graph::from_input(input);
+        let mut graph = Graph::from_input(input);
         let result = graph.find_least_connected_edge(None).unwrap();
         assert_eq!(result.weight, 1);
     }
@@ -329,7 +285,7 @@ mod tests {
         lsr: lhk
         rzs: qnr cmg lsr rsh
         frs: qnr lhk lsr";
-        let graph = Graph::from_input(input);
+        let mut graph = Graph::from_input(input);
         let result = graph.find_least_connected_edge(None).unwrap();
         assert_eq!(result.weight, 1);
     }
@@ -341,35 +297,43 @@ mod tests {
                 Edge {
                     nodes: vec!["a".to_string(), "b".to_string()],
                     weight: 1,
+                    connectivity_score: None,
                 },
                 Edge {
                     nodes: vec!["a".to_string(), "c".to_string()],
                     weight: 10,
+                    connectivity_score: None,
                 },
                 Edge {
                     nodes: vec!["b".to_string(), "c".to_string()],
                     weight: 1,
+                    connectivity_score: None,
                 },
                 Edge {
                     nodes: vec!["b".to_string(), "d".to_string()],
                     weight: 1,
+                    connectivity_score: None,
                 },
                 Edge {
                     nodes: vec!["c".to_string(), "d".to_string()],
                     weight: 1,
+                    connectivity_score: None,
                 },
                 Edge {
                     nodes: vec!["d".to_string(), "e".to_string()],
                     weight: 1,
+                    connectivity_score: None,
                 },
             ]
             .into_iter()
             .collect(),
             nodes: HashSet::new(),
+            memory: HashMap::new(),
         };
         let edge = Edge {
             nodes: vec!["a".to_string(), "b".to_string()],
             weight: 1,
+            connectivity_score: None,
         };
         let result = graph.calculate_connectivity_score(&edge);
         assert_eq!(result, 12);
@@ -409,18 +373,22 @@ mod tests {
             Edge {
                 nodes: vec!["a".to_string(), new_id.clone()],
                 weight: 1,
+                connectivity_score: None,
             },
             Edge {
                 nodes: vec![new_id.clone(), "e".to_string()],
                 weight: 2,
+                connectivity_score: None,
             },
             Edge {
                 nodes: vec![new_id.clone(), "d".to_string()],
                 weight: 1,
+                connectivity_score: None,
             },
             Edge {
                 nodes: vec!["x".to_string(), "y".to_string()],
                 weight: 1,
+                connectivity_score: None,
             },
         ]);
 
