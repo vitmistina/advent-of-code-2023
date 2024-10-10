@@ -1,9 +1,10 @@
-use super::Graph;
+use super::{Edge, Graph, Node};
 
 impl Graph {
     pub fn from_input(input: &str) -> Self {
         let mut graph = Graph {
             edges: Default::default(),
+            nodes: Default::default(),
         };
 
         for line in input.lines() {
@@ -12,15 +13,33 @@ impl Graph {
             let neighbors = parts.next().unwrap_or_default();
 
             for neighbor in neighbors.split(' ').map(str::trim) {
-                if graph
-                    .edges
-                    .get(&(neighbor.to_string(), node.to_string()))
-                    .is_some()
-                {
-                    continue;
-                }
-                graph.edges.insert((node.to_string(), neighbor.to_string()));
+                let mut nodes = vec![node.to_string(), neighbor.to_string()];
+                nodes.sort();
+
+                let edge = Edge { nodes, weight: 1 };
+
+                if !graph.edges.contains(&edge) {
+                    graph.edges.insert(edge);
+                };
+
+                let node = Node {
+                    id: neighbor.to_string(),
+                    contains: vec![],
+                };
+
+                if !graph.nodes.contains(&node) {
+                    graph.nodes.insert(node);
+                };
             }
+
+            let node = Node {
+                id: node.to_string(),
+                contains: vec![],
+            };
+
+            if !graph.nodes.contains(&node) {
+                graph.nodes.insert(node);
+            };
         }
 
         graph
@@ -29,6 +48,8 @@ impl Graph {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashSet;
+
     use super::*;
 
     #[test]
@@ -38,7 +59,57 @@ mod tests {
         let input = "jqt: rhn xhk nvd
         xhk: jqt kqr\n";
         let graph = Graph::from_input(input);
-        assert_eq!(graph.edges.len(), 4);
+
+        let expected_edges: HashSet<Edge> = [
+            Edge {
+                nodes: vec!["jqt".to_string(), "rhn".to_string()],
+                weight: 1,
+            },
+            Edge {
+                nodes: vec!["jqt".to_string(), "xhk".to_string()],
+                weight: 1,
+            },
+            Edge {
+                nodes: vec!["jqt".to_string(), "nvd".to_string()],
+                weight: 1,
+            },
+            Edge {
+                nodes: vec!["kqr".to_string(), "xhk".to_string()],
+                weight: 1,
+            },
+        ]
+        .iter()
+        .cloned()
+        .collect();
+
+        let expected_nodes: HashSet<Node> = [
+            Node {
+                id: "jqt".to_string(),
+                contains: vec![],
+            },
+            Node {
+                id: "xhk".to_string(),
+                contains: vec![],
+            },
+            Node {
+                id: "kqr".to_string(),
+                contains: vec![],
+            },
+            Node {
+                id: "nvd".to_string(),
+                contains: vec![],
+            },
+            Node {
+                id: "rhn".to_string(),
+                contains: vec![],
+            },
+        ]
+        .iter()
+        .cloned()
+        .collect();
+
+        assert_eq!(graph.edges, expected_edges);
+        assert_eq!(graph.nodes, expected_nodes);
     }
 
     #[test]
@@ -58,5 +129,6 @@ mod tests {
         frs: qnr lhk lsr\n";
         let graph = Graph::from_input(input);
         assert_eq!(graph.edges.len(), 33);
+        assert_eq!(graph.nodes.len(), 15);
     }
 }

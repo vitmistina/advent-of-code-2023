@@ -7,19 +7,13 @@ impl Graph {
         let mut communities = Vec::new();
         let mut visited = HashSet::new();
 
-        for (node1, node2) in &self.edges {
-            if !visited.contains(node1) {
-                let community = self.depth_first_search(node1);
-                visited.extend(community.iter().cloned());
-                communities.push(community);
-            }
-            if !visited.contains(node2) {
-                let community = self.depth_first_search(node2);
+        for node in self.nodes.iter() {
+            if !visited.contains(&node.id) {
+                let community = self.depth_first_search(&node.id);
                 visited.extend(community.iter().cloned());
                 communities.push(community);
             }
         }
-
         communities
     }
 
@@ -54,14 +48,12 @@ impl Graph {
         visited
     }
 
-    fn neighbors(&self, node: &String) -> Vec<String> {
+    pub fn neighbors(&self, node: &String) -> Vec<String> {
         self.edges
             .iter()
-            .filter_map(|(n1, n2)| {
-                if n1 == node {
-                    Some(n2.clone())
-                } else if n2 == node {
-                    Some(n1.clone())
+            .filter_map(|edge| {
+                if edge.nodes.contains(node) {
+                    Some(edge.nodes.iter().find(|n| n != &node).unwrap().clone())
                 } else {
                     None
                 }

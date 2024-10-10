@@ -52,7 +52,9 @@ impl Graph {
             .unwrap();
 
         let mut nodes = Vec::new();
-        for (node1, node2) in &self.edges {
+        for edge in &self.edges {
+            let node1 = &edge.nodes[0];
+            let node2 = &edge.nodes[1];
             if !nodes.contains(node1) {
                 nodes.push(node1.clone());
                 file.write_all(Self::write_node(node1).as_bytes()).unwrap();
@@ -63,7 +65,9 @@ impl Graph {
             }
         }
 
-        for (node1, node2) in &self.edges {
+        for edge in &self.edges {
+            let node1 = &edge.nodes[0];
+            let node2 = &edge.nodes[1];
             file.write_all(
                 format!("<edge source=\"{}\" target=\"{}\"/>\n", node1, node2).as_bytes(),
             )
